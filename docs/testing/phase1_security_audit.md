@@ -180,3 +180,4 @@ The system implements 5 standardized system roles:
 | Multi-Tenant Isolation | 6 | 6 | 0 | None |
 | RBAC Least Privilege | 4 | 4 | 0 | None |
 | **Total** | **18** | **18** | **0** | **0 High / 0 Med / 0 Low** |
+

@@ -60,3 +60,4 @@ print(f"  purge_expired_sessions.apply() result: {purge_result.result} sessions 
 assert isinstance(purge_result.result, int), "Expected integer purged count"
 
 print("\n[AUDIT RESULT] Celery task registration and execution verified successfully.")
+

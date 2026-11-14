@@ -334,3 +334,4 @@ print(f"AUDIT COMPLETE: {passed_tests}/{total_tests} PASSED ({failed_tests} FAIL
 print("=" * 75)
 
 db.close()
+

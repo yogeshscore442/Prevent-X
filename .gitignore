@@ -26,6 +26,8 @@ coverage/
 *.sqlite
 *.sqlite3
 postgres-data/
+infrastructure/bin/
+data/
 
 # OS and IDE
 .DS_Store

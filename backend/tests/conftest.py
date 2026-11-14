@@ -3,6 +3,7 @@ PREVENT-X Pytest Configuration and Fixtures
 Sets up isolated database sessions, seeded RBAC roles, test tenants, and API test clients.
 """
 
+import os
 import uuid
 import pytest
 from fastapi.testclient import TestClient
@@ -21,14 +22,20 @@ from backend.app.security.passwords import hash_password
 from backend.app.security.permissions import SystemRole
 from backend.app.services.bootstrap_service import initialize_system_roles_and_permissions
 
-# In-memory test SQLite engine with static pool to preserve across threads
-TEST_DATABASE_URL = "sqlite:///:memory:"
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
+if not TEST_DATABASE_URL or not TEST_DATABASE_URL.startswith("postgresql"):
+    TEST_DATABASE_URL = "sqlite:///:memory:"
+    test_engine = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+else:
+    test_engine = create_engine(
+        TEST_DATABASE_URL,
+        pool_pre_ping=True,
+    )
 
-test_engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
 TestingSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
@@ -47,7 +54,8 @@ def setup_test_database():
     finally:
         db.close()
     yield
-    Base.metadata.drop_all(bind=test_engine)
+    if not TEST_DATABASE_URL.startswith("postgresql"):
+        Base.metadata.drop_all(bind=test_engine)
 
 
 @pytest.fixture
