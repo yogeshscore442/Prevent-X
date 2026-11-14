@@ -30,3 +30,4 @@ class SystemSetting(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<SystemSetting {self.key}>"
+

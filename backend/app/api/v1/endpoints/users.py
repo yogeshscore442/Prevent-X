@@ -59,3 +59,4 @@ def create_user(
         last_login_at=user.last_login_at,
         role_name=req.role_name,
     )
+

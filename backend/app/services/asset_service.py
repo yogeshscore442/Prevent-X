@@ -128,3 +128,4 @@ class AssetService:
 
 
 asset_service = AssetService()
+

@@ -35,3 +35,4 @@ export interface BootstrapPayload {
   initial_organization_name: string;
   initial_organization_slug: string;
 }
+

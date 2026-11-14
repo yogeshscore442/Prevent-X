@@ -34,3 +34,4 @@ export interface AssetListResponse {
   items: ManagedAsset[];
   total: number;
 }
+

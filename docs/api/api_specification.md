@@ -166,3 +166,4 @@ ReDoc documentation is available at `/api/v1/redoc`.
 ### `GET /api/v1/audit-logs`
 - **Description**: Queries immutable security audit events scoped to tenant.
 - **Required Permission**: `audit:read`.
+

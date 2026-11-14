@@ -78,3 +78,4 @@ class BaseSecurityModule(ABC):
             f"Module {self.module_id} ({self.name}) is planned for Phase {self.target_phase} "
             f"and is not operational in Phase 1."
         )
+

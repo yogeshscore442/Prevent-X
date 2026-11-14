@@ -26,3 +26,4 @@ class ModuleRegistry:
 
 
 module_registry = ModuleRegistry()
+

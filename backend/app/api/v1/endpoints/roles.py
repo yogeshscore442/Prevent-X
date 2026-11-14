@@ -44,3 +44,4 @@ def list_permissions(
 ):
     perms = db.query(Permission).order_by(Permission.module.asc(), Permission.code.asc()).all()
     return perms
+

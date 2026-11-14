@@ -22,3 +22,4 @@ celery_app.conf.update(
     task_time_limit=300,  # 5 minutes maximum runtime per task
     broker_connection_retry_on_startup=True,
 )
+

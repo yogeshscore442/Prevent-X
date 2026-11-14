@@ -129,3 +129,4 @@ class SecurityEventRecord(Base):
     mitigation_action: Mapped[str] = mapped_column(String(50), nullable=False) # BLOCKED, LOGGED, CHALLENGED
     payload_sample: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True, nullable=False)
+

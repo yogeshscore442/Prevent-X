@@ -4,3 +4,4 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Set standard timezone
 SET timezone = 'UTC';
+

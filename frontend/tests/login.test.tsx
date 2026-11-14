@@ -1,6 +1,5 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -40,3 +39,4 @@ describe('LoginPage Component', () => {
     expect(passwordInput.value).toBe('AlphaAdminPass123!');
   });
 });
+

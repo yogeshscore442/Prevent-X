@@ -53,3 +53,4 @@ def verify_csrf_token(request: Request) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": "CSRF_INVALID", "message": "Invalid CSRF token"},
         )
+

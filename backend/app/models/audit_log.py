@@ -53,3 +53,4 @@ class AuditEvent(Base):
 
     def __repr__(self) -> str:
         return f"<AuditEvent action={self.action} status={self.status} org={self.organization_id} time={self.created_at}>"
+

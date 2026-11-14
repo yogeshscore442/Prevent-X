@@ -13,3 +13,4 @@ export interface Role {
   is_system_role: boolean;
   permissions: Permission[];
 }
+

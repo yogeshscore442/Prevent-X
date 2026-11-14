@@ -74,3 +74,4 @@ class TenantScopedRepository(BaseRepository[ModelType]):
             .filter(self.model.organization_id == organization_id)
             .count()
         )
+

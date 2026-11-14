@@ -102,3 +102,4 @@ def delete_asset(
 ):
     asset_service.delete_asset(db=db, org=org, asset_id=asset_id, current_user=current_user)
     return None
+

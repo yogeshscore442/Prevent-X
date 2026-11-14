@@ -35,3 +35,4 @@ export interface SystemInfo {
   database_backend: string;
   modules: ModuleStatus[];
 }
+

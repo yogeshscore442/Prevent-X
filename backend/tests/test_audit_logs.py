@@ -39,3 +39,4 @@ def test_audit_logs_recorded_and_retrieved(client, test_tenants):
         assert item["status"] in ["SUCCESS", "FAILURE", "DENIED"]
         assert "created_at" in item
         assert "resource_type" in item
+

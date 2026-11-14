@@ -86,3 +86,4 @@ def update_organization(
     db: Session = Depends(get_db),
 ):
     return organization_service.update_organization(db=db, org_id=org_id, req=req, current_user=user)
+

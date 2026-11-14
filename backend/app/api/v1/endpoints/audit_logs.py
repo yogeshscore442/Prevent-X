@@ -36,3 +36,4 @@ def get_audit_logs(
     items = audit_repo.get_logs_for_organization(db=db, organization_id=target_org_id, skip=skip, limit=limit)
     total = audit_repo.count_logs_for_organization(db=db, organization_id=target_org_id)
     return AuditLogListResponse(items=items, total=total)
+

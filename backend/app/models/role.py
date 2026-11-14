@@ -62,3 +62,4 @@ class Role(Base):
 
     def __repr__(self) -> str:
         return f"<Role {self.name}>"
+

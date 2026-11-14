@@ -66,3 +66,4 @@ class AuditRepository(BaseRepository[AuditEvent]):
 
 
 audit_repo = AuditRepository()
+

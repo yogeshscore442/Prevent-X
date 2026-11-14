@@ -22,3 +22,4 @@ We adopted **Argon2id** via `argon2-cffi`. Argon2id is the primary recommendatio
   - Automatic salt generation and constant-time verification.
 - **Negative**:
   - Slightly higher CPU and memory overhead during user authentication. Thoroughly offset by rate limiting and normal SMB concurrency profiles.
+

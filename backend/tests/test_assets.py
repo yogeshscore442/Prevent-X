@@ -70,3 +70,4 @@ def test_asset_input_validation(client, test_tenants):
     }
     resp = client.post("/api/v1/assets", json=bad_payload, headers=headers)
     assert resp.status_code == 422
+

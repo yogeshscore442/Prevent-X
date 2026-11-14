@@ -98,3 +98,4 @@ class OrganizationMembership(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<OrganizationMembership user={self.user_id} org={self.organization_id} role={self.role_id}>"
+

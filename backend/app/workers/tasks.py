@@ -35,3 +35,4 @@ def purge_expired_sessions() -> int:
 def worker_health_ping() -> str:
     """Healthcheck ping task for Celery worker."""
     return "pong"
+

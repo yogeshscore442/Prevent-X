@@ -94,3 +94,4 @@ def get_system_info(db: Session = Depends(get_db)):
         database_backend=db_backend,
         modules=modules,
     )
+

@@ -45,3 +45,4 @@ flowchart TD
 5. **Database Layer (`backend/app/models/`)**: Declarative SQLAlchemy models with UUID primary keys, foreign-key referential integrity, and Alembic database migrations.
 6. **Background Task Processing (`backend/app/workers/`)**: Redis-backed Celery worker processing asynchronous background jobs, session cleanups, and telemetry.
 7. **Frontend Presentation (`frontend/src/`)**: Componentized React 18 SPA built with TypeScript, Tailwind CSS, and Lucide icons.
+

@@ -39,3 +39,4 @@ def check_needs_rehash(hashed_password: str) -> bool:
         return _hasher.check_needs_rehash(hashed_password)
     except Exception:
         return True
+

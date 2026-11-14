@@ -243,3 +243,4 @@ ALL_MODULES: List[BaseSecurityModule] = [
     AutomatedResponseReliableRollbackModule(),
     CentralizedSMBSecurityPlatformModule(),
 ]
+

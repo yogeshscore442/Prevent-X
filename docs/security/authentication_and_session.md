@@ -53,3 +53,4 @@ To prevent Cross-Site Request Forgery while utilizing secure `HttpOnly` browser 
 2. The frontend reads `preventx_csrf_token` and includes it in the `X-CSRF-Token` HTTP header on all mutating requests (`POST`, `PUT`, `PATCH`, `DELETE`).
 3. `CSRFMiddleware` verifies that the `X-CSRF-Token` header exactly matches the `preventx_csrf_token` cookie via constant-time string comparison (`hmac.compare_digest`).
 4. Requests using explicit `Authorization: Bearer <token>` are exempt from CSRF checks because web browsers do not automatically attach custom Authorization headers cross-origin.
+

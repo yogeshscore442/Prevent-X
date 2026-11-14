@@ -39,3 +39,4 @@ class Permission(Base):
 
     def __repr__(self) -> str:
         return f"<Permission {self.code}>"
+

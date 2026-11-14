@@ -114,3 +114,4 @@ def test_cross_tenant_user_listing_isolation(client, test_tenants):
     # Must NEVER leak Beta Industries users
     assert "admin@betaind.in" not in user_emails
     assert "viewer@betaind.in" not in user_emails
+

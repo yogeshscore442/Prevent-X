@@ -20,3 +20,4 @@ We established a strict contract:
   - Zero deceptive functionality; total operational integrity.
 - **Negative**:
   - The UI presents honest empty states and status indicators for future engines rather than pre-baked simulated charts.
+

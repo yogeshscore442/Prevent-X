@@ -84,3 +84,4 @@ def test_csrf_cookie_authentication_enforcement(client, test_tenants):
         headers={"X-CSRF-Token": csrf_cookie},
     )
     assert resp_with_csrf.status_code == 201
+

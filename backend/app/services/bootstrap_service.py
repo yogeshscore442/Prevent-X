@@ -63,3 +63,4 @@ def initialize_system_roles_and_permissions(db: Session) -> None:
 
     db.commit()
     logger.info("PREVENT-X system roles and permissions successfully synchronized.")
+

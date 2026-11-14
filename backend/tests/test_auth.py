@@ -132,3 +132,4 @@ def test_logout_and_session_revocation(client, test_tenants, db_session):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert me_resp_after.status_code == 401
+

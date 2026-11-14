@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
@@ -57,3 +56,4 @@ describe('DashboardPage Component', () => {
     expect(screen.getByText(/Authorized Assets/i)).toBeInTheDocument();
   });
 });
+

@@ -21,3 +21,4 @@
 ### Issue: "TENANT_ACCESS_DENIED (HTTP 403)"
 - **Cause**: The authenticated user attempted to specify an `X-Organization-Id` for an organization in which they do not hold an active membership.
 - **Solution**: Verify the user's memberships via `GET /api/v1/auth/me`. Only platform superusers may switch between arbitrary tenant organizations.
+

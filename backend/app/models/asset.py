@@ -52,3 +52,4 @@ class ManagedAsset(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<ManagedAsset {self.name} ({self.target}) org={self.organization_id}>"
+

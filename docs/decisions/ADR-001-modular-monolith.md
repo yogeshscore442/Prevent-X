@@ -18,3 +18,4 @@ Individual engines are segregated into dedicated domain modules in `backend/app/
   - Direct refactoring path: individual modules can later be extracted into independent microservices or sidecar proxies when high traffic necessitates horizontal scaling.
 - **Negative**:
   - Deployment units are shared; updating one module in production requires re-deploying the unified backend container.
+

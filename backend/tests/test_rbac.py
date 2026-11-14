@@ -72,3 +72,4 @@ def test_roles_and_permissions_endpoint(client, test_tenants):
     assert resp_perms.status_code == 200
     perms = resp_perms.json()
     assert len(perms) >= 10
+

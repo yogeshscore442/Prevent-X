@@ -13,3 +13,4 @@ class AssetRepository(TenantScopedRepository[ManagedAsset]):
 
 
 asset_repo = AssetRepository()
+

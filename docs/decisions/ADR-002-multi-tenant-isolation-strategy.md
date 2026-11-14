@@ -20,3 +20,4 @@ All tenant-owned models inherit from `TenantScopedRepository`, which guarantees 
   - Single database connection pool and unified Alembic migration lifecycle.
 - **Negative**:
   - Developers must conscientiously use `TenantScopedRepository` for any new tenant-owned tables to prevent accidental cross-tenant data leakage. Explicit security tests are enforced in CI.
+

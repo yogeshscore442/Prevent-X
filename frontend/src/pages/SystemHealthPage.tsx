@@ -85,17 +85,17 @@ export const SystemHealthPage: React.FC = () => {
                 <Database className="w-4 h-4 text-emerald-400" />
               </div>
               <div className="flex items-center gap-2">
-                {readiness?.database.status === 'UP' ? (
+                {readiness?.database?.status === 'UP' ? (
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 ) : (
                   <XCircle className="w-5 h-5 text-rose-400" />
                 )}
                 <span className="text-lg font-bold text-white font-mono">
-                  {readiness?.database.status || 'DOWN'}
+                  {readiness?.database?.status || 'DOWN'}
                 </span>
               </div>
               <div className="text-xs text-slate-400 mt-3 font-mono flex items-center justify-between">
-                <span>Latency: {readiness?.database.latency_ms} ms</span>
+                <span>Latency: {readiness?.database?.latency_ms ?? '--'} ms</span>
                 <span className="text-slate-500 uppercase">{systemInfo?.database_backend}</span>
               </div>
             </div>
@@ -107,17 +107,17 @@ export const SystemHealthPage: React.FC = () => {
                 <Cpu className="w-4 h-4 text-amber-400" />
               </div>
               <div className="flex items-center gap-2">
-                {readiness?.redis.status === 'UP' ? (
+                {readiness?.redis?.status === 'UP' ? (
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 ) : (
                   <AlertTriangle className="w-5 h-5 text-amber-400" />
                 )}
                 <span className="text-lg font-bold text-white font-mono">
-                  {readiness?.redis.status || 'DOWN'}
+                  {readiness?.redis?.status || 'DOWN'}
                 </span>
               </div>
-              <div className="text-xs text-slate-400 mt-3 font-mono truncate" title={readiness?.redis.details}>
-                {readiness?.redis.details}
+              <div className="text-xs text-slate-400 mt-3 font-mono truncate" title={readiness?.redis?.details}>
+                {readiness?.redis?.details}
               </div>
             </div>
           </div>
@@ -152,3 +152,4 @@ export const SystemHealthPage: React.FC = () => {
     </div>
   );
 };
+

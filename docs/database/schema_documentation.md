@@ -81,3 +81,4 @@ Tamper-resistant audit logs recording all security and tenant actions.
 - `status` (VARCHAR(50), Not Null): `SUCCESS`, `FAILURE`, `DENIED`.
 - `details` (TEXT, Nullable): JSON metadata or structured description.
 - `created_at` (TIMESTAMPTZ, Default UTC Now, Indexed).
+

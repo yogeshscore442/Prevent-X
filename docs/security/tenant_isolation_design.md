@@ -53,3 +53,4 @@ flowchart TD
      - Tenant header spoofing attacks (`X-Organization-Id` pointing to an unauthorized tenant).
      - Cross-tenant user listing leakage tests.
    - All cross-tenant attacks are verified to fail and be recorded in the audit trail.
+

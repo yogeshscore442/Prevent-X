@@ -20,3 +20,4 @@ class OrganizationRepository(BaseRepository[Organization]):
 
 
 organization_repo = OrganizationRepository()
+

@@ -48,3 +48,4 @@ def ping_redis() -> Tuple[bool, float, str]:
     except Exception as e:
         latency = (time.perf_counter() - start_time) * 1000.0
         return False, round(latency, 2), f"Redis connection failed: {str(e)}"
+

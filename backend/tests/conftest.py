@@ -168,3 +168,4 @@ def test_tenants(db_session):
         "admin_b": admin_b,
         "viewer_b": viewer_b,
     }
+

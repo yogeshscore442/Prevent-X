@@ -264,3 +264,4 @@ def require_superuser(
     if not user.is_superuser:
         raise InsufficientPermissionsException("Superuser administrative privileges required")
     return user
+

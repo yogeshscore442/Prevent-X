@@ -119,3 +119,4 @@ def get_current_user_profile(
         user=user,
         current_org_id=session_record.organization_id,
     )
+

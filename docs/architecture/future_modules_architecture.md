@@ -52,3 +52,4 @@ class BaseSecurityModule(ABC):
 ```
 
 Calling `execute_action()` on an unreleased module raises `NotImplementedError` with a clear message stating the planned release phase. This guarantees that unreleased engines cannot be accidentally invoked or presented as fake operational capabilities.
+

@@ -41,3 +41,4 @@ def test_system_info_and_module_catalog(client):
     assert mod_12 is not None
     assert mod_12["status"] == "OPERATIONAL"
     assert mod_12["phase"] == 1
+

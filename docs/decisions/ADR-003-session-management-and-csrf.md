@@ -19,3 +19,4 @@ We implemented a **hybrid security model**:
   - Native server-side session invalidation upon operator logout.
 - **Negative**:
   - Single-page application frontend must inspect cookies and attach the `X-CSRF-Token` header for API calls. Handled seamlessly by Axios interceptors.
+

@@ -60,3 +60,4 @@ def test_organization_creation_rejected_for_regular_user(client, test_tenants):
         headers=headers,
     )
     assert resp.status_code == 403
+

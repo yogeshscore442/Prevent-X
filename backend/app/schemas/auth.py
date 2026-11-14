@@ -63,3 +63,4 @@ class BootstrapResponse(BaseModel):
 class LogoutResponse(BaseModel):
     status: str
     message: str
+

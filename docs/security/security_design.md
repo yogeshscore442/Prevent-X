@@ -29,3 +29,4 @@ PREVENT-X is engineered under a zero-implicit-trust model:
 | **A08: Software & Data Integrity Failures** | Immutable audit logs tracking all administrative actions. Signed JWT tokens with HS256 validation. |
 | **A09: Security Logging & Monitoring Failures** | Structured JSON logs with timestamp, user ID, tenant ID, action, and client IP. Database-backed audit trail. |
 | **A10: Server-Side Request Forgery (SSRF)** | Asset onboarding requires explicit organization scoping and domain validation. |
+

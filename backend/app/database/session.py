@@ -4,6 +4,7 @@ Configures connection pooling, transaction isolation, and dependency injection.
 """
 
 from typing import Generator
+from fastapi import HTTPException
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from backend.app.core.config import settings
@@ -54,9 +55,13 @@ def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         logger.error(f"Database transaction error: {str(e)}", exc_info=True)
         raise
     finally:
         db.close()
+
