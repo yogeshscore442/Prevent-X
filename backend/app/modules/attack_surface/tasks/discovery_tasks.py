@@ -39,3 +39,4 @@ def execute_discovery_job(self, job_id_str: str) -> dict:
         raise exc
     finally:
         db.close()
+

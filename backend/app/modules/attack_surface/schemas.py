@@ -12,8 +12,9 @@ from pydantic import BaseModel, Field, ConfigDict
 class DiscoveryJobCreate(BaseModel):
     """Schema for initiating an authorized passive discovery job."""
     asset_id: UUID = Field(..., description="Target managed asset ID owned by the active organization")
-    target_domain: Optional[str] = Field(None, max_length=255, description="Domain to discover (must match asset scope)")
+    target_domain: Optional[str] = Field(None, max_length=255, description="Domain or target to discover (must match asset scope)")
     authorization_confirmed: bool = Field(..., description="Mandatory confirmation that user possesses authorization to scan target")
+    discovery_policy: str = Field("PUBLIC_PASSIVE", description="Discovery policy: PUBLIC_PASSIVE or AUTHORIZED_INTERNAL")
 
 
 class DiscoveryJobCancel(BaseModel):
@@ -29,6 +30,7 @@ class DiscoveryJobResponse(BaseModel):
     organization_id: UUID
     asset_id: UUID
     target_domain: str
+    discovery_policy: str = "PUBLIC_PASSIVE"
     status: str
     progress_percent: int
     current_stage: str
@@ -132,6 +134,8 @@ class ExposureFindingResponse(BaseModel):
     job_id: UUID
     target: str
     finding_category: str
+    verification_status: str = "UNVERIFIED_RESOURCE"
+    evidence_nature: str = "POTENTIAL_WEAKNESS"
     severity: str
     confidence: str
     title: str
@@ -147,15 +151,20 @@ class RiskFactorDetail(BaseModel):
     """Breakdown component of the deterministic exposure risk score."""
     name: str
     factor_key: str
+    category: str = "ATTACK_SURFACE_EXPOSURE"
     score: float
     max_weight: float
     impact: str
+    confidence: float = 0.95
+    evidence_quality: str = "HIGH"
+    is_vulnerability: bool = False
     description: str
 
 
 class RiskScoreBreakdown(BaseModel):
     """Complete explainable risk breakdown calculation."""
     total_score: float = Field(..., ge=0.0, le=100.0)
+    max_possible_score: float = 100.0
     risk_level: str  # LOW, MEDIUM, HIGH, CRITICAL
     factors: List[RiskFactorDetail]
     interpretation: str
@@ -170,3 +179,4 @@ class AttackSurfaceOverviewResponse(BaseModel):
     findings_by_severity: Dict[str, int]
     findings_by_category: Dict[str, int]
     recent_jobs: List[DiscoveryJobResponse]
+

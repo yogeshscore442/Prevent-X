@@ -117,7 +117,7 @@ def test_scope_validator_enforces_asset_ownership_and_hierarchy(db_session, test
     assert "outside the authorized scope" in str(exc.value.detail).lower()
 
     # 3. Success for exact target or valid subdomain
-    val_asset, effective_target = ScopeValidator.validate_and_authorize_job(
+    val_asset, effective_target, effective_policy = ScopeValidator.validate_and_authorize_job(
         db=db_session,
         organization_id=org_a.id,
         asset_id=asset.id,
@@ -126,6 +126,181 @@ def test_scope_validator_enforces_asset_ownership_and_hierarchy(db_session, test
     )
     assert val_asset.id == asset.id
     assert effective_target == "sub.portal.smbclient.in"
+    assert effective_policy == "PUBLIC_PASSIVE"
+
+
+def test_ssrf_defense_alternate_encodings_and_mapped_ipv6():
+    from backend.app.modules.attack_surface.ssrf_defense import SSRFDefense, SSRFValidationError
+
+    # Decimal integer IP encodings (e.g. 2130706433 = 127.0.0.1)
+    with pytest.raises(SSRFValidationError) as exc:
+        SSRFDefense.validate_url_or_ip("http://2130706433/admin")
+    assert "loopback" in str(exc.value.detail).lower()
+
+    # Octal IP encodings (e.g. 0177.0.0.1 = 127.0.0.1)
+    with pytest.raises(SSRFValidationError):
+        SSRFDefense.validate_url_or_ip("http://0177.0.0.1/")
+
+    # Hex IP encodings (e.g. 0x7f000001 = 127.0.0.1)
+    with pytest.raises(SSRFValidationError):
+        SSRFDefense.validate_url_or_ip("http://0x7f.0.0.1/")
+
+    # IPv4-mapped IPv6 (::ffff:127.0.0.1, ::ffff:10.0.0.1, ::ffff:169.254.169.254)
+    with pytest.raises(SSRFValidationError) as exc:
+        SSRFDefense.validate_url_or_ip("http://[::ffff:127.0.0.1]/")
+    assert "loopback" in str(exc.value.detail).lower()
+
+    with pytest.raises(SSRFValidationError) as exc:
+        SSRFDefense.validate_url_or_ip("http://[::ffff:10.0.0.1]/")
+    assert "private" in str(exc.value.detail).lower()
+
+    with pytest.raises(SSRFValidationError) as exc:
+        SSRFDefense.validate_url_or_ip("http://[::ffff:169.254.169.254]/")
+    assert "cloud metadata" in str(exc.value.detail).lower()
+
+    # Cloud hypervisor metadata endpoints
+    for meta_ip in ["169.254.169.254", "100.100.100.200", "192.0.0.192"]:
+        with pytest.raises(SSRFValidationError) as exc:
+            SSRFDefense.validate_url_or_ip(f"http://{meta_ip}/latest/meta-data/")
+        assert "cloud metadata" in str(exc.value.detail).lower()
+
+
+def test_ssrf_defense_dns_rebinding_and_redirect_checks():
+    from backend.app.modules.attack_surface.ssrf_defense import SSRFDefense, SSRFValidationError
+
+    # DNS rebinding: resolved IPs containing private/loopback addresses must be rejected
+    with pytest.raises(SSRFValidationError) as exc:
+        SSRFDefense.validate_resolved_ips(["93.184.216.34", "127.0.0.1"], allow_private=False)
+    assert "loopback" in str(exc.value.detail).lower()
+
+    # Redirect validator: following a redirect to internal address must fail
+    validator = SSRFDefense.create_redirect_validator(allow_private=False)
+    fake_request = MagicMock()
+    fake_request.url = "http://127.0.0.1/internal-secret"
+    with pytest.raises(SSRFValidationError) as exc:
+        validator(fake_request)
+    assert "loopback" in str(exc.value.detail).lower()
+
+
+def test_public_passive_vs_authorized_internal_policies(db_session, test_tenants):
+    from backend.app.models.attack_surface import DiscoveryPolicy
+    org_a = test_tenants["org_a"]
+
+    # 1. Registered internal asset with CIDR target
+    internal_asset = ManagedAsset(
+        organization_id=org_a.id,
+        name="Internal ERP Cluster",
+        asset_type="INTERNAL_NETWORK",
+        target="10.50.0.0/16",
+        environment="STAGING",
+        criticality="MEDIUM",
+        is_in_scope=True,
+    )
+    db_session.add(internal_asset)
+    db_session.commit()
+
+    # A) Under PUBLIC_PASSIVE policy, private IP is strictly rejected
+    with pytest.raises(ScopeValidationError) as exc:
+        ScopeValidator.validate_and_authorize_job(
+            db=db_session,
+            organization_id=org_a.id,
+            asset_id=internal_asset.id,
+            target_domain="10.50.1.5",
+            authorization_confirmed=True,
+            discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        )
+    assert "private" in str(exc.value.detail).lower()
+
+    # B) Under AUTHORIZED_INTERNAL policy without explicit permission or confirm, rejected
+    with pytest.raises(ScopeValidationError):
+        ScopeValidator.validate_and_authorize_job(
+            db=db_session,
+            organization_id=org_a.id,
+            asset_id=internal_asset.id,
+            target_domain="10.50.1.5",
+            authorization_confirmed=False,
+            discovery_policy=DiscoveryPolicy.AUTHORIZED_INTERNAL,
+            user_has_internal_permission=True,
+        )
+
+    # C) Under AUTHORIZED_INTERNAL with permission, authorized IP within CIDR is allowed
+    val_asset, effective_target, pol = ScopeValidator.validate_and_authorize_job(
+        db=db_session,
+        organization_id=org_a.id,
+        asset_id=internal_asset.id,
+        target_domain="10.50.1.5",
+        authorization_confirmed=True,
+        discovery_policy=DiscoveryPolicy.AUTHORIZED_INTERNAL,
+        user_has_internal_permission=True,
+    )
+    assert effective_target == "10.50.1.5"
+    assert pol == DiscoveryPolicy.AUTHORIZED_INTERNAL
+
+    # D) Target outside approved CIDR (e.g. 192.168.1.1) is rejected even under AUTHORIZED_INTERNAL
+    with pytest.raises(ScopeValidationError) as exc:
+        ScopeValidator.validate_and_authorize_job(
+            db=db_session,
+            organization_id=org_a.id,
+            asset_id=internal_asset.id,
+            target_domain="192.168.1.1",
+            authorization_confirmed=True,
+            discovery_policy=DiscoveryPolicy.AUTHORIZED_INTERNAL,
+            user_has_internal_permission=True,
+        )
+    assert "authorized cidr allowlist" in str(exc.value.detail).lower()
+
+    # E) Cloud metadata and loopback are rejected even under AUTHORIZED_INTERNAL
+    with pytest.raises(ScopeValidationError):
+        ScopeValidator.validate_and_authorize_job(
+            db=db_session,
+            organization_id=org_a.id,
+            asset_id=internal_asset.id,
+            target_domain="169.254.169.254",
+            authorization_confirmed=True,
+            discovery_policy=DiscoveryPolicy.AUTHORIZED_INTERNAL,
+            user_has_internal_permission=True,
+        )
+
+
+def test_dangling_cname_classification_unverified_vs_verified():
+    from backend.app.models.attack_surface import TakeoverVerificationStatus
+    engine = DeterministicRiskEngine()
+
+    dns_unverified = {
+        "spf_record": "v=spf1 -all",
+        "dmarc_record": "v=DMARC1; p=reject;",
+        "public_ips": ["203.0.113.1"],
+        "internal_ips_detected": [],
+        "dangling_cname_candidates": ["app.azurewebsites.net"],
+        "cname_takeover_status": TakeoverVerificationStatus.UNVERIFIED_RESOURCE,
+    }
+    calc_unverified = engine.calculate_risk(
+        domain_name="example.com",
+        subdomains=["example.com"],
+        dns_data=dns_unverified,
+        certificates=[],
+    )
+    takeover_factor_unverified = next(f for f in calc_unverified["factors"] if f["factor_key"] == "resource_takeover")
+    assert takeover_factor_unverified["score"] == 7.5
+    assert takeover_factor_unverified["evidence_quality"] == "MEDIUM"
+
+    dns_verified_unclaimed = {
+        "spf_record": "v=spf1 -all",
+        "dmarc_record": "v=DMARC1; p=reject;",
+        "public_ips": ["203.0.113.1"],
+        "internal_ips_detected": [],
+        "dangling_cname_candidates": ["app.azurewebsites.net"],
+        "cname_takeover_status": TakeoverVerificationStatus.VERIFIED_UNCLAIMED_RESOURCE,
+    }
+    calc_verified = engine.calculate_risk(
+        domain_name="example.com",
+        subdomains=["example.com"],
+        dns_data=dns_verified_unclaimed,
+        certificates=[],
+    )
+    takeover_factor_verified = next(f for f in calc_verified["factors"] if f["factor_key"] == "resource_takeover")
+    assert takeover_factor_verified["score"] == 15.0
+    assert takeover_factor_verified["evidence_quality"] == "HIGH"
 
 
 # ==============================================================================
@@ -162,18 +337,20 @@ def test_deterministic_risk_engine_clean_posture():
 
 
 def test_deterministic_risk_engine_elevated_exposure():
+    from backend.app.models.attack_surface import TakeoverVerificationStatus
     engine = DeterministicRiskEngine()
     dns_risky = {
         "spf_record": None,  # Missing SPF (+10)
         "dmarc_record": None,  # Missing DMARC (+10 -> +20 total for both)
         "public_ips": ["203.0.113.1"],
         "internal_ips_detected": ["10.0.0.5"],  # RFC1918 leak (+10)
-        "dangling_cname_candidates": ["takeover.s3.amazonaws.com"],  # Dangling CNAME (+15)
+        "dangling_cname_candidates": ["takeover.s3.amazonaws.com"],
+        "cname_takeover_status": TakeoverVerificationStatus.VERIFIED_UNCLAIMED_RESOURCE,  # Verified unclaimed (+15)
     }
     certs_risky = [
         {"common_name": "*.example.com", "is_wildcard": True, "is_expired": True},  # Wildcard (+15), Expired (+20)
     ]
-    subdomains = [f"sub{i}.example.com" for i in range(25)]  # Sprawl > 20 (+25)
+    subdomains = [f"sub{i}.example.com" for i in range(25)]  # Sprawl > 20 (+20)
 
     calc = engine.calculate_risk(
         domain_name="example.com",
@@ -183,9 +360,19 @@ def test_deterministic_risk_engine_elevated_exposure():
         rdap_data=None,
     )
 
-    # 25 (sprawl) + 15 (wildcard) + 20 (expired) + 20 (no SPF/DMARC) + 15 (dangling) + 10 (internal IP) = 105 -> capped to 100.0
+    # Exactly 20 (sprawl) + 15 (wildcard) + 20 (expired) + 20 (no SPF/DMARC) + 15 (verified unclaimed CNAME) + 10 (internal IP) = exactly 100.0
     assert calc["total_score"] == 100.0
     assert calc["risk_level"] == "CRITICAL"
+
+    # Test mathematical invariance: sum of max factor weights must equal exactly 100.0
+    total_max_weights = sum(f["max_weight"] for f in calc["factors"])
+    assert total_max_weights == 100.0
+
+    # Ensure every factor reports evidence quality and is_vulnerability
+    for factor in calc["factors"]:
+        assert "evidence_quality" in factor
+        assert "confidence" in factor
+        assert factor["is_vulnerability"] is False  # Factors are exposure metrics, not confirmed vulnerabilities!
 
 
 # ==============================================================================

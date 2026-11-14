@@ -15,6 +15,7 @@ from backend.app.models.setting import SystemSetting
 from backend.app.models.attack_surface import (
     DiscoveryJob,
     DiscoveryJobStatus,
+    DiscoveryPolicy,
     DiscoveredDomain,
     DNSRecord,
     CertificateEvidence,
@@ -23,6 +24,8 @@ from backend.app.models.attack_surface import (
     FindingCategory,
     FindingSeverity,
     FindingConfidence,
+    TakeoverVerificationStatus,
+    EvidenceNature,
 )
 from backend.app.models.future_entities import (
     CveRecord,
@@ -51,6 +54,7 @@ __all__ = [
     "SystemSetting",
     "DiscoveryJob",
     "DiscoveryJobStatus",
+    "DiscoveryPolicy",
     "DiscoveredDomain",
     "DNSRecord",
     "CertificateEvidence",
@@ -59,6 +63,8 @@ __all__ = [
     "FindingCategory",
     "FindingSeverity",
     "FindingConfidence",
+    "TakeoverVerificationStatus",
+    "EvidenceNature",
     "CveRecord",
     "VulnerabilityRecord",
     "ThreatIntelligenceFeed",

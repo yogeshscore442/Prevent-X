@@ -23,6 +23,7 @@ export interface DiscoveryJob {
   organization_id: string;
   asset_id: string;
   target_domain: string;
+  discovery_policy: 'PUBLIC_PASSIVE' | 'AUTHORIZED_INTERNAL';
   status: 'PENDING' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'PARTIALLY_COMPLETED' | 'FAILED' | 'CANCELLED';
   progress_percent: number;
   current_stage: string;
@@ -107,6 +108,8 @@ export interface ExposureFinding {
   job_id: string;
   target: string;
   finding_category: string;
+  verification_status: 'POTENTIAL_DANGLING_CNAME' | 'UNVERIFIED_RESOURCE' | 'VERIFIED_UNCLAIMED_RESOURCE' | 'CONFIRMED_TAKEOVER';
+  evidence_nature: 'OBSERVED_FACT' | 'POTENTIAL_WEAKNESS' | 'VERIFIED_ISSUE' | 'UNVERIFIED_FINDING';
   severity: 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   confidence: string;
   title: string;
@@ -132,4 +135,6 @@ export interface DiscoveryJobCreatePayload {
   asset_id: string;
   target_domain?: string;
   authorization_confirmed: boolean;
+  discovery_policy?: 'PUBLIC_PASSIVE' | 'AUTHORIZED_INTERNAL';
 }
+

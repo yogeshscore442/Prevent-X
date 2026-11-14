@@ -25,6 +25,8 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
+*.rdb
+dump.rdb
 postgres-data/
 infrastructure/bin/
 data/

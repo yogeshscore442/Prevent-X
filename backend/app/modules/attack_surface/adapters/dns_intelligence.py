@@ -84,6 +84,8 @@ class DNSIntelligenceAdapter(DNSIntelligenceProvider):
 
         # 3. Query CNAME records
         cname_recs = self._query_records(domain, "CNAME")
+        cname_status = "NONE"
+
         for val, ttl in cname_recs:
             clean_cname = val.rstrip(".")
             cname_targets.append(clean_cname)
@@ -99,6 +101,8 @@ class DNSIntelligenceAdapter(DNSIntelligenceProvider):
             for pattern in DANGLING_CNAME_PATTERNS:
                 if pattern in clean_cname.lower():
                     dangling_candidates.append(clean_cname)
+                    # Non-intrusively inspect CNAME target resolution
+                    cname_status = self._check_cname_target_status(clean_cname)
                     break
 
         # 4. Query MX records
@@ -162,11 +166,31 @@ class DNSIntelligenceAdapter(DNSIntelligenceProvider):
             "internal_ips_detected": sorted(list(internal_ips)),
             "cname_targets": cname_targets,
             "dangling_cname_candidates": dangling_candidates,
+            "cname_takeover_status": cname_status,
             "spf_record": spf_record,
             "dmarc_record": dmarc_record,
             "has_mx": len(mx_records) > 0,
             "has_ns": len(ns_records) > 0,
         }
+
+    def _check_cname_target_status(self, cname_target: str) -> str:
+        """
+        Safely inspects CNAME target resolution without attempting to claim or modify external resources.
+        Returns:
+            - VERIFIED_UNCLAIMED_RESOURCE if target yields NXDOMAIN.
+            - POTENTIAL_DANGLING_CNAME if target resolves to an active IP/host (unverified).
+            - UNVERIFIED_RESOURCE on resolution timeout/error.
+        """
+        try:
+            answers = self.resolver.resolve(cname_target, "A")
+            if answers:
+                return "POTENTIAL_DANGLING_CNAME"
+        except dns.resolver.NXDOMAIN:
+            # The target domain does not exist on the third-party provider!
+            return "VERIFIED_UNCLAIMED_RESOURCE"
+        except (dns.resolver.NoAnswer, dns.resolver.Timeout, dns.exception.DNSException):
+            return "UNVERIFIED_RESOURCE"
+        return "POTENTIAL_DANGLING_CNAME"
 
     def _query_records(self, domain: str, rtype: str) -> List[Tuple[str, Optional[int]]]:
         results: List[Tuple[str, Optional[int]]] = []

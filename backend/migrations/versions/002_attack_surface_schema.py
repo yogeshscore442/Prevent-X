@@ -168,3 +168,4 @@ def downgrade() -> None:
     op.drop_table('dns_records')
     op.drop_table('discovered_domains')
     op.drop_table('discovery_jobs')
+

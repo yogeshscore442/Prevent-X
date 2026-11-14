@@ -9,12 +9,13 @@ import logging
 from typing import Dict, Any, Optional, List
 import httpx
 from backend.app.modules.attack_surface.interfaces import RDAPIntelligenceProvider
+from backend.app.modules.attack_surface.ssrf_defense import SSRFDefense, SSRFValidationError
 
 logger = logging.getLogger("preventx.attack_surface.rdap")
 
 
 class RDAPAdapter(RDAPIntelligenceProvider):
-    """Fetches domain registration data with strict privacy preservation."""
+    """Fetches domain registration data with strict privacy preservation and SSRF defenses."""
 
     BASE_URL = "https://rdap.org/domain/"
 
@@ -26,17 +27,19 @@ class RDAPAdapter(RDAPIntelligenceProvider):
         """
         Executes RDAP query and returns sanitized registration metadata.
         """
+        SSRFDefense.validate_hostname(domain)
         url = f"{self.BASE_URL}{domain}"
-        headers = {
-            "Accept": "application/rdap+json, application/json",
-            "User-Agent": "PREVENT-X-AttackSurfaceEngine/1.0 (+https://preventx.smb.in)",
-        }
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                with httpx.Client(timeout=self.timeout_seconds, follow_redirects=True) as client:
-                    resp = client.get(url, headers=headers)
+                with SSRFDefense.create_safe_client() as client:
+                    resp = client.get(url, headers={"Accept": "application/rdap+json, application/json"})
                     if resp.status_code == 200:
+                        content_length = resp.headers.get("content-length")
+                        if content_length and int(content_length) > SSRFDefense.MAX_RESPONSE_SIZE:
+                            logger.warning(f"RDAP response exceeded maximum allowed payload size for {domain}")
+                            return None
+
                         data = resp.json()
                         return self._sanitize_and_parse(data)
                     elif resp.status_code == 404:
@@ -44,6 +47,9 @@ class RDAPAdapter(RDAPIntelligenceProvider):
                         return None
                     else:
                         logger.warning(f"RDAP query for {domain} returned HTTP {resp.status_code}")
+            except SSRFValidationError as ssrf_err:
+                logger.error(f"SSRF violation caught during RDAP query for {domain}: {ssrf_err.detail}")
+                return None
             except (httpx.TimeoutException, httpx.NetworkError) as e:
                 logger.warning(f"RDAP connection error for {domain} (attempt {attempt}/{self.max_retries}): {e}")
 
@@ -134,3 +140,4 @@ class RDAPAdapter(RDAPIntelligenceProvider):
             except ValueError:
                 continue
         return None
+

@@ -42,17 +42,19 @@ class AttackSurfaceService:
         asset_id: UUID,
         target_domain: Optional[str],
         authorization_confirmed: bool,
+        discovery_policy: str = "PUBLIC_PASSIVE",
     ) -> DiscoveryJob:
         """
         Validates scope boundary, stores job, and enqueues Celery background task.
         """
         # 1. Enforce scope & authorization boundary
-        asset, validated_domain = ScopeValidator.validate_and_authorize_job(
+        asset, validated_domain, policy = ScopeValidator.validate_and_authorize_job(
             db=db,
             organization_id=organization_id,
             asset_id=asset_id,
             target_domain=target_domain,
             authorization_confirmed=authorization_confirmed,
+            discovery_policy=discovery_policy,
         )
 
         # 2. Check for active duplicate job
@@ -74,6 +76,7 @@ class AttackSurfaceService:
             organization_id=organization_id,
             asset_id=asset.id,
             target_domain=validated_domain,
+            discovery_policy=policy,
             status=DiscoveryJobStatus.QUEUED,
             progress_percent=0,
             current_stage="QUEUED",
@@ -304,3 +307,4 @@ class AttackSurfaceService:
             findings_by_category=findings_by_category,
             recent_jobs=recent_jobs,
         )
+

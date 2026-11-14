@@ -78,16 +78,19 @@ class DiscoveryManager:
             db.commit()
 
             # Stage 2: Certificate Transparency (30%)
-            try:
-                raw_certs = self.ct_adapter.fetch_certificates(job.target_domain)
-                parsed_certs, discovered_set = self.ct_adapter.parse_certificates_and_domains(
-                    job.target_domain, raw_certs
-                )
-                parsed_certificates = parsed_certs
-                all_discovered_domains = sorted(list(discovered_set))
-            except Exception as e:
-                logger.warning(f"Certificate Transparency stage warning: {e}")
-                stage_errors["CERTIFICATE_TRANSPARENCY"] = str(e)
+            if getattr(job, "discovery_policy", "PUBLIC_PASSIVE") == "PUBLIC_PASSIVE":
+                try:
+                    raw_certs = self.ct_adapter.fetch_certificates(job.target_domain)
+                    parsed_certs, discovered_set = self.ct_adapter.parse_certificates_and_domains(
+                        job.target_domain, raw_certs
+                    )
+                    parsed_certificates = parsed_certs
+                    all_discovered_domains = sorted(list(discovered_set))
+                except Exception as e:
+                    logger.warning(f"Certificate Transparency stage warning: {e}")
+                    stage_errors["CERTIFICATE_TRANSPARENCY"] = str(e)
+            else:
+                logger.info(f"Skipping public CT logs for AUTHORIZED_INTERNAL discovery job {job_id}")
 
             self._check_cancellation(db, job_id)
             job.progress_percent = 40
@@ -119,11 +122,14 @@ class DiscoveryManager:
             db.commit()
 
             # Stage 4: RDAP Analysis (80%)
-            try:
-                rdap_summary = self.rdap_adapter.fetch_domain_profile(job.target_domain)
-            except Exception as e:
-                logger.warning(f"RDAP Analysis stage warning: {e}")
-                stage_errors["RDAP_ANALYSIS"] = str(e)
+            if getattr(job, "discovery_policy", "PUBLIC_PASSIVE") == "PUBLIC_PASSIVE":
+                try:
+                    rdap_summary = self.rdap_adapter.fetch_domain_profile(job.target_domain)
+                except Exception as e:
+                    logger.warning(f"RDAP Analysis stage warning: {e}")
+                    stage_errors["RDAP_ANALYSIS"] = str(e)
+            else:
+                logger.info(f"Skipping public RDAP for AUTHORIZED_INTERNAL discovery job {job_id}")
 
             self._check_cancellation(db, job_id)
             job.progress_percent = 85
@@ -289,3 +295,4 @@ class DiscoveryManager:
         status_val = db.query(DiscoveryJob.status).filter(DiscoveryJob.id == job_id).scalar()
         if status_val == DiscoveryJobStatus.CANCELLED:
             raise RuntimeError(f"Discovery job {job_id} was cancelled by user.")
+

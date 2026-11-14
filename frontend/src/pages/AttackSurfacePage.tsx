@@ -42,6 +42,7 @@ export const AttackSurfacePage: React.FC = () => {
 
   // Discovery Form State
   const [selectedAssetId, setSelectedAssetId] = useState<string>('');
+  const [discoveryPolicy, setDiscoveryPolicy] = useState<'PUBLIC_PASSIVE' | 'AUTHORIZED_INTERNAL'>('PUBLIC_PASSIVE');
   const [customSubdomain, setCustomSubdomain] = useState<string>('');
   const [authConfirmed, setAuthConfirmed] = useState<boolean>(false);
   const [isSubmittingJob, setIsSubmittingJob] = useState<boolean>(false);
@@ -52,6 +53,7 @@ export const AttackSurfacePage: React.FC = () => {
   const [domainSearch, setDomainSearch] = useState<string>('');
   const [findingSeverityFilter, setFindingSeverityFilter] = useState<string>('ALL');
   const [findingCategoryFilter, setFindingCategoryFilter] = useState<string>('ALL');
+  const [findingNatureFilter, setFindingNatureFilter] = useState<string>('ALL');
 
   // Load Initial Data
   const loadInitialData = useCallback(async () => {
@@ -126,6 +128,7 @@ export const AttackSurfacePage: React.FC = () => {
         asset_id: selectedAssetId,
         target_domain: customSubdomain.trim() || undefined,
         authorization_confirmed: authConfirmed,
+        discovery_policy: discoveryPolicy,
       });
 
       setActiveJob(created);
@@ -164,7 +167,8 @@ export const AttackSurfacePage: React.FC = () => {
   const filteredFindings = findings.filter((f) => {
     const matchSev = findingSeverityFilter === 'ALL' || f.severity === findingSeverityFilter;
     const matchCat = findingCategoryFilter === 'ALL' || f.finding_category === findingCategoryFilter;
-    return matchSev && matchCat;
+    const matchNature = findingNatureFilter === 'ALL' || f.evidence_nature === findingNatureFilter;
+    return matchSev && matchCat && matchNature;
   });
 
   const getSeverityBadgeClass = (severity: string) => {
@@ -365,31 +369,31 @@ export const AttackSurfacePage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
               <div className="p-4 rounded-lg bg-navy-950/60 border border-navy-800">
                 <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
-                  <span>1. Subdomain Sprawl</span>
-                  <span className="font-mono text-cyan-400">Max 25 pts</span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Evaluates breadth of external asset perimeter. &gt;5 subdomains adds 15 pts; &gt;20 subdomains adds 25 pts.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-lg bg-navy-950/60 border border-navy-800">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
-                  <span>2. Wildcard TLS Certificates</span>
-                  <span className="font-mono text-cyan-400">Max 15 pts</span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Wildcards expand attack blast radius across unmonitored hostnames if private keys leak.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-lg bg-navy-950/60 border border-navy-800">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
-                  <span>3. Certificate Validity</span>
+                  <span>1. Perimeter Breadth & Sprawl</span>
                   <span className="font-mono text-cyan-400">Max 20 pts</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Penalizes expired certificates (+20 pts) or certificates expiring within 30 days (+10 pts).
+                  Exposure indicator measuring external perimeter. &gt;5 subdomains adds 12 pts; &gt;20 subdomains adds 20 pts. Not proof of compromise.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-navy-950/60 border border-navy-800">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
+                  <span>2. Certificate Scope Posture</span>
+                  <span className="font-mono text-cyan-400">Max 15 pts</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Architecture indicator. Wildcard TLS certificates (+10 pts) expand compromise blast radius across all hostnames.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-navy-950/60 border border-navy-800">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
+                  <span>3. Service Availability (TLS)</span>
+                  <span className="font-mono text-cyan-400">Max 20 pts</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Evaluates service availability and trust breakdown. Expired certificate (+20 pts) breaks visitor access. Not code exploitability.
                 </p>
               </div>
 
@@ -399,27 +403,27 @@ export const AttackSurfacePage: React.FC = () => {
                   <span className="font-mono text-cyan-400">Max 20 pts</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Missing both SPF and DMARC (+20 pts) exposes SMB to brand impersonation and executive phishing.
+                  Evaluates domain spoofing hygiene. Missing SPF and DMARC (+20 pts) allows email impersonation. Distinct from app exposure.
                 </p>
               </div>
 
               <div className="p-4 rounded-lg bg-navy-950/60 border border-navy-800">
                 <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
-                  <span>5. Dangling Cloud CNAMEs</span>
+                  <span>5. Resource Takeover Indicators</span>
                   <span className="font-mono text-cyan-400">Max 15 pts</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Detects CNAME pointers to AWS S3, Azure, GitHub Pages, or Heroku vulnerable to subdomain takeover.
+                  Distinguishes verified unclaimed resources via NXDOMAIN (+15 pts) from unverified third-party cloud CNAME pointers (+7.5 pts).
                 </p>
               </div>
 
               <div className="p-4 rounded-lg bg-navy-950/60 border border-navy-800">
                 <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
-                  <span>6. Private IP Leakage</span>
+                  <span>6. Network Topology Exposure</span>
                   <span className="font-mono text-cyan-400">Max 10 pts</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  RFC 1918 or internal addresses resolved in public DNS leak internal network topology.
+                  Private RFC 1918 addresses (+10 pts) leaked in public DNS reveal internal network numbering.
                 </p>
               </div>
             </div>
@@ -541,7 +545,23 @@ export const AttackSurfacePage: React.FC = () => {
             </div>
 
             <form onSubmit={handleLaunchDiscovery} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Discovery Policy Selection */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-cyan-400" />
+                    Discovery Policy <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={discoveryPolicy}
+                    onChange={(e) => setDiscoveryPolicy(e.target.value as any)}
+                    className="w-full bg-navy-950 border border-navy-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
+                  >
+                    <option value="PUBLIC_PASSIVE">PUBLIC_PASSIVE (External Passive Recon)</option>
+                    <option value="AUTHORIZED_INTERNAL">AUTHORIZED_INTERNAL (Internal Scoped Recon)</option>
+                  </select>
+                </div>
+
                 {/* Managed Asset Selection */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
@@ -567,7 +587,7 @@ export const AttackSurfacePage: React.FC = () => {
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5 text-slate-400" />
-                    Target Domain / Subdomain (Optional)
+                    Target Domain / IP (Optional)
                   </label>
                   <input
                     type="text"
@@ -783,6 +803,22 @@ export const AttackSurfacePage: React.FC = () => {
               </select>
             </div>
 
+            {/* Finding Nature Filter */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Nature:</span>
+              <select
+                value={findingNatureFilter}
+                onChange={(e) => setFindingNatureFilter(e.target.value)}
+                className="bg-navy-900 border border-navy-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              >
+                <option value="ALL">All Natures</option>
+                <option value="OBSERVED_FACT">Observed Fact</option>
+                <option value="POTENTIAL_WEAKNESS">Potential Weakness</option>
+                <option value="VERIFIED_ISSUE">Verified Issue</option>
+                <option value="UNVERIFIED_FINDING">Unverified Finding</option>
+              </select>
+            </div>
+
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400">Category:</span>
               <select
@@ -791,12 +827,11 @@ export const AttackSurfacePage: React.FC = () => {
                 className="bg-navy-900 border border-navy-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
               >
                 <option value="ALL">All Categories</option>
-                <option value="DNS_CONFIGURATION">DNS Configuration</option>
-                <option value="CERTIFICATE_EXPOSURE">Certificate Exposure</option>
-                <option value="UNKNOWN_ASSET_RELATIONSHIP">Unknown Asset</option>
-                <option value="PUBLIC_DOMAIN">Public Domain</option>
-                <option value="PUBLIC_IP">Public IP</option>
-                <option value="DISCOVERED_SUBDOMAIN">Discovered Subdomain</option>
+                <option value="ATTACK_SURFACE_EXPOSURE">Attack Surface Exposure</option>
+                <option value="EMAIL_SECURITY_POSTURE">Email Security Posture</option>
+                <option value="CERTIFICATE_TLS_POSTURE">Certificate & TLS Posture</option>
+                <option value="DNS_CONFIGURATION_WEAKNESS">DNS Configuration Weakness</option>
+                <option value="RESOURCE_TAKEOVER_INDICATOR">Resource Takeover Indicator</option>
               </select>
             </div>
 
@@ -811,11 +846,11 @@ export const AttackSurfacePage: React.FC = () => {
                 <thead className="bg-navy-950 text-slate-400 uppercase font-mono text-[10px]">
                   <tr>
                     <th className="px-4 py-3">Severity</th>
+                    <th className="px-4 py-3">Nature</th>
                     <th className="px-4 py-3">Title</th>
                     <th className="px-4 py-3">Target</th>
                     <th className="px-4 py-3">Category</th>
-                    <th className="px-4 py-3">Confidence</th>
-                    <th className="px-4 py-3">Observed</th>
+                    <th className="px-4 py-3">Verification</th>
                     <th className="px-4 py-3 text-right">Evidence</th>
                   </tr>
                 </thead>
@@ -827,13 +862,35 @@ export const AttackSurfacePage: React.FC = () => {
                           {f.severity}
                         </span>
                       </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
+                          f.evidence_nature === 'VERIFIED_ISSUE'
+                            ? 'bg-rose-950/60 border-rose-600/50 text-rose-300'
+                            : f.evidence_nature === 'POTENTIAL_WEAKNESS'
+                            ? 'bg-amber-950/60 border-amber-600/50 text-amber-300'
+                            : f.evidence_nature === 'OBSERVED_FACT'
+                            ? 'bg-blue-950/60 border-blue-600/50 text-blue-300'
+                            : 'bg-slate-800 border-slate-700 text-slate-300'
+                        }`}>
+                          {f.evidence_nature || 'FACT'}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 font-medium text-slate-200 max-w-xs truncate">
                         {f.title}
                       </td>
                       <td className="px-4 py-3 font-mono text-cyan-300">{f.target}</td>
                       <td className="px-4 py-3 font-mono text-[11px] text-slate-400">{f.finding_category}</td>
-                      <td className="px-4 py-3 font-mono text-slate-300">{f.confidence}</td>
-                      <td className="px-4 py-3 text-slate-400">{new Date(f.last_observed_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 font-mono text-[11px] text-slate-300">
+                        {f.verification_status ? (
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] border ${
+                            f.verification_status === 'VERIFIED_UNCLAIMED_RESOURCE'
+                              ? 'bg-rose-950/80 border-rose-500 text-rose-300 font-bold'
+                              : 'bg-navy-950 border-navy-700 text-slate-400'
+                          }`}>
+                            {f.verification_status}
+                          </span>
+                        ) : '—'}
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => setInspectFinding(f)}

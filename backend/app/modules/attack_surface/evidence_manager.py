@@ -1,6 +1,8 @@
 """
 PREVENT-X Evidence Manager
 Synthesizes multi-source passive telemetry into categorized, actionable Exposure Findings.
+Classifies findings by nature (Observed Fact, Potential Weakness, Verified Issue, Unverified Finding)
+and assigns rigorous takeover verification statuses without inventing exploitability.
 """
 
 from datetime import datetime, timezone
@@ -12,6 +14,8 @@ from backend.app.models.attack_surface import (
     FindingCategory,
     FindingSeverity,
     FindingConfidence,
+    TakeoverVerificationStatus,
+    EvidenceNature,
 )
 
 
@@ -37,22 +41,27 @@ class EvidenceManager:
         findings: List[ExposureFinding] = []
         now = datetime.now(timezone.utc)
 
-        # 1. Base Domain Discovery Finding
+        # ----------------------------------------------------------------------
+        # 1. Base Domain Discovery (Observed Fact)
+        # ----------------------------------------------------------------------
         findings.append(
             ExposureFinding(
                 organization_id=organization_id,
                 asset_id=asset_id,
                 job_id=job_id,
                 target=target_domain,
-                finding_category=FindingCategory.PUBLIC_DOMAIN,
+                finding_category=FindingCategory.ATTACK_SURFACE_EXPOSURE,
                 severity=FindingSeverity.INFO,
                 confidence=FindingConfidence.HIGH,
-                title=f"Public Domain Exposure: {target_domain}",
-                description=f"Primary domain '{target_domain}' is actively exposed on the public internet.",
+                evidence_nature=EvidenceNature.OBSERVED_FACT,
+                verification_status=TakeoverVerificationStatus.UNVERIFIED_RESOURCE,
+                title=f"Public Perimeter Domain: {target_domain}",
+                description=f"Primary domain '{target_domain}' is actively routable on the public web.",
                 evidence=json.dumps({
                     "domain": target_domain,
                     "registrar": rdap_data.get("registrar_name") if rdap_data else "Unknown",
                     "public_ips": dns_data.get("public_ips", []),
+                    "source": "DNS_RDAP",
                 }),
                 discovery_source="PASSIVE_RECON",
                 first_observed_at=now,
@@ -61,25 +70,27 @@ class EvidenceManager:
             )
         )
 
-        # 2. Discovered Subdomains
+        # ----------------------------------------------------------------------
+        # 2. Discovered Subdomains (Observed Fact / Asset Mapping)
+        # ----------------------------------------------------------------------
         for sub in discovered_domains:
             if sub != target_domain:
                 is_known = sub in known_asset_targets
-                cat = FindingCategory.DISCOVERED_SUBDOMAIN if is_known else FindingCategory.UNKNOWN_ASSET_RELATIONSHIP
-                sev = FindingSeverity.LOW if is_known else FindingSeverity.MEDIUM
                 findings.append(
                     ExposureFinding(
                         organization_id=organization_id,
                         asset_id=asset_id,
                         job_id=job_id,
                         target=sub,
-                        finding_category=cat,
-                        severity=sev,
+                        finding_category=FindingCategory.ATTACK_SURFACE_EXPOSURE,
+                        severity=FindingSeverity.LOW if is_known else FindingSeverity.MEDIUM,
                         confidence=FindingConfidence.HIGH,
-                        title=f"{'Discovered Subdomain' if is_known else 'Uncataloged Subdomain Asset'}: {sub}",
-                        description=f"Passive intelligence revealed active hostname '{sub}' under '{target_domain}'."
-                        + (" Not currently registered in asset inventory." if not is_known else ""),
-                        evidence=json.dumps({"subdomain": sub, "parent_domain": target_domain}),
+                        evidence_nature=EvidenceNature.OBSERVED_FACT,
+                        verification_status=TakeoverVerificationStatus.UNVERIFIED_RESOURCE,
+                        title=f"{'Cataloged Subdomain' if is_known else 'Uncataloged External Subdomain'}: {sub}",
+                        description=f"Passive Certificate Transparency telemetry observed active hostname '{sub}' under '{target_domain}'."
+                        + (" Not currently listed in active managed asset inventory." if not is_known else ""),
+                        evidence=json.dumps({"subdomain": sub, "parent_domain": target_domain, "source": "CRT_SH"}),
                         discovery_source="CERTIFICATE_TRANSPARENCY",
                         first_observed_at=now,
                         last_observed_at=now,
@@ -87,7 +98,9 @@ class EvidenceManager:
                     )
                 )
 
-        # 3. Public IP Endpoints
+        # ----------------------------------------------------------------------
+        # 3. Public IP Endpoints (Observed Fact)
+        # ----------------------------------------------------------------------
         for ip in dns_data.get("public_ips", []):
             findings.append(
                 ExposureFinding(
@@ -95,12 +108,14 @@ class EvidenceManager:
                     asset_id=asset_id,
                     job_id=job_id,
                     target=ip,
-                    finding_category=FindingCategory.PUBLIC_IP,
+                    finding_category=FindingCategory.ATTACK_SURFACE_EXPOSURE,
                     severity=FindingSeverity.INFO,
                     confidence=FindingConfidence.HIGH,
+                    evidence_nature=EvidenceNature.OBSERVED_FACT,
+                    verification_status=TakeoverVerificationStatus.UNVERIFIED_RESOURCE,
                     title=f"Routable Public IP Endpoint: {ip}",
-                    description=f"Public IPv4/IPv6 address {ip} mapped to domain infrastructure.",
-                    evidence=json.dumps({"ip": ip, "target_domain": target_domain}),
+                    description=f"Public IPv4/IPv6 address {ip} mapped to domain perimeter infrastructure.",
+                    evidence=json.dumps({"ip": ip, "target_domain": target_domain, "source": "DNS_RESOLVER"}),
                     discovery_source="DNS_RESOLVER",
                     first_observed_at=now,
                     last_observed_at=now,
@@ -108,7 +123,9 @@ class EvidenceManager:
                 )
             )
 
-        # 4. Email Security Posture (SPF & DMARC)
+        # ----------------------------------------------------------------------
+        # 4. Email Security Posture (SPF & DMARC) (Potential Weakness)
+        # ----------------------------------------------------------------------
         has_spf = bool(dns_data.get("spf_record"))
         has_dmarc = bool(dns_data.get("dmarc_record"))
 
@@ -119,12 +136,14 @@ class EvidenceManager:
                     asset_id=asset_id,
                     job_id=job_id,
                     target=target_domain,
-                    finding_category=FindingCategory.DNS_CONFIGURATION,
+                    finding_category=FindingCategory.EMAIL_SECURITY_POSTURE,
                     severity=FindingSeverity.HIGH,
                     confidence=FindingConfidence.HIGH,
-                    title="Missing SPF Record (Email Spoofing Risk)",
-                    description=f"No Sender Policy Framework (SPF) record found on {target_domain}. Adversaries can forge emails using this domain.",
-                    evidence=json.dumps({"domain": target_domain, "checked_records": ["TXT"]}),
+                    evidence_nature=EvidenceNature.POTENTIAL_WEAKNESS,
+                    verification_status=TakeoverVerificationStatus.UNVERIFIED_RESOURCE,
+                    title="Missing SPF Record (Domain Spoofing Susceptibility)",
+                    description=f"No Sender Policy Framework (SPF) record found on {target_domain}. Email receivers cannot verify authorized sending MTAs.",
+                    evidence=json.dumps({"domain": target_domain, "query": "TXT", "result": "NO_SPF_RECORD"}),
                     discovery_source="DNS_RESOLVER",
                     first_observed_at=now,
                     last_observed_at=now,
@@ -139,12 +158,14 @@ class EvidenceManager:
                     asset_id=asset_id,
                     job_id=job_id,
                     target=f"_dmarc.{target_domain}",
-                    finding_category=FindingCategory.DNS_CONFIGURATION,
+                    finding_category=FindingCategory.EMAIL_SECURITY_POSTURE,
                     severity=FindingSeverity.HIGH,
                     confidence=FindingConfidence.HIGH,
-                    title="Missing DMARC Policy (Brand Impersonation Risk)",
-                    description=f"No DMARC policy discovered at _dmarc.{target_domain}. Unauthenticated mail cannot be verified by recipient servers.",
-                    evidence=json.dumps({"target": f"_dmarc.{target_domain}", "checked_records": ["TXT"]}),
+                    evidence_nature=EvidenceNature.POTENTIAL_WEAKNESS,
+                    verification_status=TakeoverVerificationStatus.UNVERIFIED_RESOURCE,
+                    title="Missing DMARC Policy (Brand Impersonation Susceptibility)",
+                    description=f"No DMARC enforcement policy discovered at _dmarc.{target_domain}. Unauthenticated outbound email cannot be rejected.",
+                    evidence=json.dumps({"target": f"_dmarc.{target_domain}", "query": "TXT", "result": "NO_DMARC_RECORD"}),
                     discovery_source="DNS_RESOLVER",
                     first_observed_at=now,
                     last_observed_at=now,
@@ -152,7 +173,9 @@ class EvidenceManager:
                 )
             )
 
-        # 5. Wildcard & Expired Certificates
+        # ----------------------------------------------------------------------
+        # 5. Certificate & TLS Posture (Availability / Architecture)
+        # ----------------------------------------------------------------------
         for cert in certificates:
             if cert.get("is_expired"):
                 findings.append(
@@ -161,15 +184,18 @@ class EvidenceManager:
                         asset_id=asset_id,
                         job_id=job_id,
                         target=cert.get("common_name") or target_domain,
-                        finding_category=FindingCategory.CERTIFICATE_EXPOSURE,
+                        finding_category=FindingCategory.CERTIFICATE_TLS_POSTURE,
                         severity=FindingSeverity.CRITICAL,
                         confidence=FindingConfidence.HIGH,
+                        evidence_nature=EvidenceNature.VERIFIED_ISSUE,
+                        verification_status=TakeoverVerificationStatus.UNVERIFIED_RESOURCE,
                         title=f"Expired TLS Certificate: {cert.get('common_name')}",
-                        description=f"Observed TLS certificate expired on {cert.get('not_after')}.",
+                        description=f"Observed TLS certificate expired on {cert.get('not_after')}. Users visiting this host face browser security warnings.",
                         evidence=json.dumps({
                             "common_name": cert.get("common_name"),
                             "issuer": cert.get("issuer_name"),
                             "not_after": str(cert.get("not_after")),
+                            "source": "CRT_SH",
                         }),
                         discovery_source="CERTIFICATE_TRANSPARENCY",
                         first_observed_at=now,
@@ -185,14 +211,17 @@ class EvidenceManager:
                         asset_id=asset_id,
                         job_id=job_id,
                         target=cert.get("common_name") or target_domain,
-                        finding_category=FindingCategory.CERTIFICATE_EXPOSURE,
+                        finding_category=FindingCategory.CERTIFICATE_TLS_POSTURE,
                         severity=FindingSeverity.LOW,
                         confidence=FindingConfidence.HIGH,
-                        title=f"Wildcard TLS Certificate Detected: {cert.get('common_name')}",
-                        description="Wildcard certificate in use. A private key compromise impacts all existing and future subdomains.",
+                        evidence_nature=EvidenceNature.POTENTIAL_WEAKNESS,
+                        verification_status=TakeoverVerificationStatus.UNVERIFIED_RESOURCE,
+                        title=f"Wildcard TLS Scope: {cert.get('common_name')}",
+                        description="Wildcard certificate in use. This is an architectural indicator: compromise of the private key expands blast radius across all current and future subdomains.",
                         evidence=json.dumps({
                             "common_name": cert.get("common_name"),
                             "issuer": cert.get("issuer_name"),
+                            "is_vulnerability": False,
                         }),
                         discovery_source="CERTIFICATE_TRANSPARENCY",
                         first_observed_at=now,
@@ -201,20 +230,43 @@ class EvidenceManager:
                     )
                 )
 
-        # 6. Dangling CNAME Takeover Candidates
+        # ----------------------------------------------------------------------
+        # 6. Resource Takeover Indicators (CNAMEs)
+        # ----------------------------------------------------------------------
+        cname_status = dns_data.get("cname_takeover_status")
         for dangling in dns_data.get("dangling_cname_candidates", []):
+            if cname_status == "VERIFIED_UNCLAIMED_RESOURCE":
+                v_status = TakeoverVerificationStatus.VERIFIED_UNCLAIMED_RESOURCE
+                nature = EvidenceNature.VERIFIED_ISSUE
+                sev = FindingSeverity.HIGH
+                conf = FindingConfidence.HIGH
+                desc = f"CNAME alias points to external cloud infrastructure ({dangling}) which yielded NXDOMAIN during resolution, indicating the third-party tenant is unclaimed."
+            else:
+                v_status = TakeoverVerificationStatus.POTENTIAL_DANGLING_CNAME
+                nature = EvidenceNature.UNVERIFIED_FINDING
+                sev = FindingSeverity.MEDIUM
+                conf = FindingConfidence.MEDIUM
+                desc = f"CNAME alias points to external cloud hosting ({dangling}). Ownership of the cloud resource is currently unverified."
+
             findings.append(
                 ExposureFinding(
                     organization_id=organization_id,
                     asset_id=asset_id,
                     job_id=job_id,
                     target=dangling,
-                    finding_category=FindingCategory.DNS_CONFIGURATION,
-                    severity=FindingSeverity.HIGH,
-                    confidence=FindingConfidence.MEDIUM,
-                    title=f"Potential Dangling CNAME / Cloud Takeover: {dangling}",
-                    description=f"CNAME alias points to external cloud infrastructure ({dangling}). If the cloud tenant is decommissioned, third parties may claim it.",
-                    evidence=json.dumps({"cname_target": dangling, "domain": target_domain}),
+                    finding_category=FindingCategory.RESOURCE_TAKEOVER_INDICATOR,
+                    severity=sev,
+                    confidence=conf,
+                    evidence_nature=nature,
+                    verification_status=v_status,
+                    title=f"Resource Takeover Indicator: {dangling}",
+                    description=desc,
+                    evidence=json.dumps({
+                        "cname_target": dangling,
+                        "domain": target_domain,
+                        "verification_status": v_status,
+                        "resolution_checked": True,
+                    }),
                     discovery_source="DNS_RESOLVER",
                     first_observed_at=now,
                     last_observed_at=now,
@@ -222,7 +274,9 @@ class EvidenceManager:
                 )
             )
 
-        # 7. Internal IP Leakage in DNS
+        # ----------------------------------------------------------------------
+        # 7. Internal IP Leakage in DNS (Verified Issue)
+        # ----------------------------------------------------------------------
         for internal_ip in dns_data.get("internal_ips_detected", []):
             findings.append(
                 ExposureFinding(
@@ -230,12 +284,14 @@ class EvidenceManager:
                     asset_id=asset_id,
                     job_id=job_id,
                     target=internal_ip,
-                    finding_category=FindingCategory.DNS_CONFIGURATION,
+                    finding_category=FindingCategory.DNS_CONFIGURATION_WEAKNESS,
                     severity=FindingSeverity.HIGH,
                     confidence=FindingConfidence.HIGH,
+                    evidence_nature=EvidenceNature.VERIFIED_ISSUE,
+                    verification_status=TakeoverVerificationStatus.UNVERIFIED_RESOURCE,
                     title=f"Internal IP Leakage in Public DNS: {internal_ip}",
-                    description=f"Public DNS records resolve to non-routable/RFC1918 internal IP {internal_ip}, revealing private network numbering.",
-                    evidence=json.dumps({"internal_ip": internal_ip, "domain": target_domain}),
+                    description=f"Public DNS records resolve to non-routable/RFC1918 internal IP {internal_ip}, leaking private network topology.",
+                    evidence=json.dumps({"internal_ip": internal_ip, "domain": target_domain, "source": "DNS_RESOLVER"}),
                     discovery_source="DNS_RESOLVER",
                     first_observed_at=now,
                     last_observed_at=now,

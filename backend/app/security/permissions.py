@@ -45,6 +45,7 @@ class PermissionCode:
     DISCOVERY_READ = "discovery:read"
     DISCOVERY_CREATE = "discovery:create"
     DISCOVERY_CANCEL = "discovery:cancel"
+    DISCOVERY_INTERNAL = "discovery:internal"
 
 
 # Default Role-Permission matrix
@@ -64,6 +65,7 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.DISCOVERY_READ,
         PermissionCode.DISCOVERY_CREATE,
         PermissionCode.DISCOVERY_CANCEL,
+        PermissionCode.DISCOVERY_INTERNAL,
     },
     SystemRole.ORG_ADMIN: {
         PermissionCode.ORG_READ,
@@ -78,6 +80,7 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.DISCOVERY_READ,
         PermissionCode.DISCOVERY_CREATE,
         PermissionCode.DISCOVERY_CANCEL,
+        PermissionCode.DISCOVERY_INTERNAL,
     },
     SystemRole.SECURITY_ANALYST: {
         PermissionCode.ORG_READ,

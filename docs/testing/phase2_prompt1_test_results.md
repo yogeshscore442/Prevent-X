@@ -193,3 +193,4 @@ dist/assets/index-BVP5aqdS.js   348.10 kB │ gzip: 97.88 kB
 6. **API Endpoints**: 9 complete endpoints under `/api/v1/attack-surface/*` with tenant isolation and audit logging.
 7. **Frontend**: 4 comprehensive sections in `AttackSurfacePage.tsx` integrated into navigation and routed.
 8. **Documentation**: Full architectural, workflow, authorization, evidence, and risk scoring specifications.
+

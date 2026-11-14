@@ -55,6 +55,7 @@ def initiate_discovery(
         asset_id=req.asset_id,
         target_domain=req.target_domain,
         authorization_confirmed=req.authorization_confirmed,
+        discovery_policy=req.discovery_policy,
     )
 
 
@@ -220,3 +221,4 @@ def get_asset_history(
         limit=50,
         offset=0,
     )
+

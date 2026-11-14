@@ -9,32 +9,41 @@ import logging
 from typing import List, Dict, Any, Set, Tuple, Optional
 import httpx
 from backend.app.modules.attack_surface.interfaces import CertificateTransparencyProvider
+from backend.app.modules.attack_surface.ssrf_defense import SSRFDefense, SSRFValidationError
 
 logger = logging.getLogger("preventx.attack_surface.crt")
 
 
 class CertificateTransparencyAdapter(CertificateTransparencyProvider):
-    """Integrates with public Certificate Transparency logs using HTTPX."""
+    """Integrates with public Certificate Transparency logs using HTTPX with SSRF defenses."""
 
     CRT_SH_URL = "https://crt.sh/"
 
-    def __init__(self, timeout_seconds: float = 12.0, max_retries: int = 2):
+    def __init__(self, timeout_seconds: float = 10.0, max_retries: int = 2):
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
 
     def fetch_certificates(self, domain: str) -> List[Dict[str, Any]]:
         """
-        Retrieves raw certificate records from crt.sh.
+        Retrieves raw certificate records from crt.sh with SSRF and size limit protections.
         """
+        # Validate domain syntax and ensure no loopback/metadata
+        SSRFDefense.validate_hostname(domain)
+
         params = {"q": f"%.{domain}", "output": "json"}
-        headers = {"User-Agent": "PREVENT-X-AttackSurfaceEngine/1.0 (+https://preventx.smb.in)"}
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                with httpx.Client(timeout=self.timeout_seconds, follow_redirects=True) as client:
-                    response = client.get(self.CRT_SH_URL, params=params, headers=headers)
+                with SSRFDefense.create_safe_client() as client:
+                    response = client.get(self.CRT_SH_URL, params=params)
                     if response.status_code == 200:
                         content_type = response.headers.get("content-type", "")
+                        # Guard against oversized payloads
+                        content_length = response.headers.get("content-length")
+                        if content_length and int(content_length) > SSRFDefense.MAX_RESPONSE_SIZE:
+                            logger.warning(f"crt.sh response exceeded maximum allowed payload size for {domain}")
+                            return []
+
                         if "json" in content_type or response.text.startswith("["):
                             try:
                                 return response.json()
@@ -48,6 +57,9 @@ class CertificateTransparencyAdapter(CertificateTransparencyProvider):
                         logger.warning(f"crt.sh temporary server error {response.status_code} (attempt {attempt}/{self.max_retries})")
                     else:
                         logger.warning(f"crt.sh returned unexpected HTTP {response.status_code} for {domain}")
+            except SSRFValidationError as ssrf_err:
+                logger.error(f"SSRF violation caught during CT query for {domain}: {ssrf_err.detail}")
+                return []
             except (httpx.TimeoutException, httpx.NetworkError) as exc:
                 logger.warning(f"crt.sh network/timeout error for {domain} (attempt {attempt}/{self.max_retries}): {exc}")
 
@@ -136,3 +148,4 @@ class CertificateTransparencyAdapter(CertificateTransparencyProvider):
             except ValueError:
                 continue
         return None
+

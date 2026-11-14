@@ -89,3 +89,4 @@ All entities are mapped to PostgreSQL 16 using typed SQLAlchemy 2.0 declarations
 - **Strictly Passive**: Absolutely NO active port scanning (Nmap/Masscan), NO vulnerability fuzzing, and NO exploitation attempts.
 - **SSRF Defenses**: Rejects private RFC 1918 ranges, loopback, link-local, carrier-grade NAT, cloud metadata (169.254.169.254), and internal TLDs (`.local`, `.internal`).
 - **Tenant Scoping**: All operations require an authenticated user with appropriate permissions (`discovery:create`, `discovery:read`, `discovery:cancel`) scoped to their active organization.
+

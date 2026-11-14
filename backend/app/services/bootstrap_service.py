@@ -28,6 +28,7 @@ SYSTEM_PERMISSIONS = [
     (PermissionCode.DISCOVERY_READ, "View Attack Surface", "Allows viewing attack surface assets and discovery jobs", "attack_surface"),
     (PermissionCode.DISCOVERY_CREATE, "Initiate Discovery", "Allows initiating external passive discovery scans", "attack_surface"),
     (PermissionCode.DISCOVERY_CANCEL, "Cancel Discovery", "Allows cancelling running discovery operations", "attack_surface"),
+    (PermissionCode.DISCOVERY_INTERNAL, "Authorized Internal Discovery", "Allows initiating internal scoped discovery on authorized internal assets", "attack_surface"),
 ]
 
 SYSTEM_ROLES = [

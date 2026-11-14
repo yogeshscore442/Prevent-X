@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { AttackSurfacePage } from '@/pages/AttackSurfacePage';
@@ -171,11 +171,12 @@ describe('AttackSurfacePage Component (Phase 2 Prompt 1)', () => {
     expect(screen.getByText('Active Exposure Findings')).toBeInTheDocument();
     expect(screen.getByText('Exposure Risk Score')).toBeInTheDocument();
     expect(screen.getByText('Deterministic Risk Scoring Model (0–100 Scale)')).toBeInTheDocument();
-    expect(screen.getByText('1. Subdomain Sprawl')).toBeInTheDocument();
+    expect(screen.getByText('1. Perimeter Breadth & Sprawl')).toBeInTheDocument();
     expect(screen.getByText('4. Email Spoofing Defense')).toBeInTheDocument();
+    expect(screen.getByText('5. Resource Takeover Indicators')).toBeInTheDocument();
   });
 
-  it('switches to Discovery Center tab and displays form with mandatory authorization checkbox', async () => {
+  it('switches to Discovery Center tab and displays form with mandatory authorization checkbox and policy selector', async () => {
     render(
       <BrowserRouter>
         <AuthProvider>
@@ -188,6 +189,7 @@ describe('AttackSurfacePage Component (Phase 2 Prompt 1)', () => {
     fireEvent.click(discoveryTabBtn);
 
     expect(await screen.findByText('Initiate Authorized Passive Discovery')).toBeInTheDocument();
+    expect(screen.getByText(/Discovery Policy/i)).toBeInTheDocument();
     expect(screen.getByText(/Mandatory Scope Confirmation:/i)).toBeInTheDocument();
 
     const submitBtn = screen.getByRole('button', { name: /launch passive discovery/i });

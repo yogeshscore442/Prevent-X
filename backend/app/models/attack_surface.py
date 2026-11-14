@@ -27,13 +27,40 @@ class DiscoveryJobStatus:
     CANCELLED = "CANCELLED"
 
 
+class DiscoveryPolicy:
+    PUBLIC_PASSIVE = "PUBLIC_PASSIVE"
+    AUTHORIZED_INTERNAL = "AUTHORIZED_INTERNAL"
+
+
+class TakeoverVerificationStatus:
+    POTENTIAL_DANGLING_CNAME = "POTENTIAL_DANGLING_CNAME"
+    UNVERIFIED_RESOURCE = "UNVERIFIED_RESOURCE"
+    VERIFIED_UNCLAIMED_RESOURCE = "VERIFIED_UNCLAIMED_RESOURCE"
+    CONFIRMED_TAKEOVER = "CONFIRMED_TAKEOVER"
+
+
+class EvidenceNature:
+    OBSERVED_FACT = "OBSERVED_FACT"
+    POTENTIAL_WEAKNESS = "POTENTIAL_WEAKNESS"
+    VERIFIED_ISSUE = "VERIFIED_ISSUE"
+    UNVERIFIED_FINDING = "UNVERIFIED_FINDING"
+
+
 class FindingCategory:
-    PUBLIC_DOMAIN = "PUBLIC_DOMAIN"
-    DISCOVERED_SUBDOMAIN = "DISCOVERED_SUBDOMAIN"
-    PUBLIC_IP = "PUBLIC_IP"
-    DNS_CONFIGURATION = "DNS_CONFIGURATION"
-    CERTIFICATE_EXPOSURE = "CERTIFICATE_EXPOSURE"
-    UNKNOWN_ASSET_RELATIONSHIP = "UNKNOWN_ASSET_RELATIONSHIP"
+    # Primary Phase 2.1 Categorization
+    ATTACK_SURFACE_EXPOSURE = "ATTACK_SURFACE_EXPOSURE"
+    EMAIL_SECURITY_POSTURE = "EMAIL_SECURITY_POSTURE"
+    CERTIFICATE_TLS_POSTURE = "CERTIFICATE_TLS_POSTURE"
+    DNS_CONFIGURATION_WEAKNESS = "DNS_CONFIGURATION_WEAKNESS"
+    RESOURCE_TAKEOVER_INDICATOR = "RESOURCE_TAKEOVER_INDICATOR"
+
+    # Compatibility aliases
+    PUBLIC_DOMAIN = "ATTACK_SURFACE_EXPOSURE"
+    DISCOVERED_SUBDOMAIN = "ATTACK_SURFACE_EXPOSURE"
+    PUBLIC_IP = "ATTACK_SURFACE_EXPOSURE"
+    DNS_CONFIGURATION = "DNS_CONFIGURATION_WEAKNESS"
+    CERTIFICATE_EXPOSURE = "CERTIFICATE_TLS_POSTURE"
+    UNKNOWN_ASSET_RELATIONSHIP = "ATTACK_SURFACE_EXPOSURE"
 
 
 class FindingSeverity:
@@ -67,6 +94,7 @@ class DiscoveryJob(Base, TimestampMixin):
         nullable=False,
     )
     target_domain: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    discovery_policy: Mapped[str] = mapped_column(String(50), default=DiscoveryPolicy.PUBLIC_PASSIVE, nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(50), default=DiscoveryJobStatus.PENDING, nullable=False, index=True)
     progress_percent: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     current_stage: Mapped[str] = mapped_column(String(100), default="VALIDATION", nullable=False)
@@ -248,6 +276,8 @@ class ExposureFinding(Base, TimestampMixin):
     )
     target: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     finding_category: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    verification_status: Mapped[str] = mapped_column(String(50), default=TakeoverVerificationStatus.UNVERIFIED_RESOURCE, nullable=False, index=True)
+    evidence_nature: Mapped[str] = mapped_column(String(50), default=EvidenceNature.POTENTIAL_WEAKNESS, nullable=False, index=True)
     severity: Mapped[str] = mapped_column(String(20), default=FindingSeverity.LOW, nullable=False, index=True)
     confidence: Mapped[str] = mapped_column(String(20), default=FindingConfidence.HIGH, nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -260,3 +290,4 @@ class ExposureFinding(Base, TimestampMixin):
 
     # Relationship
     job: Mapped["DiscoveryJob"] = relationship("DiscoveryJob", back_populates="findings")
+
