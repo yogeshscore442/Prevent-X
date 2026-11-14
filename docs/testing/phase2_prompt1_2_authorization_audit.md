@@ -74,27 +74,24 @@ To prevent denial of service, race conditions, or redundant load against externa
 
 ---
 
-## 4. Live Test Target Authorization Documentation
+## 4. Live Test Target Authorization Governance & Evidence
 
-All live network integration tests executed during PREVENT-X verification have explicitly documented legal and standards-based authorization:
+PREVENT-X enforces strict security governance for any live network test executions:
 
-### 4.1 Target: `nasscom.in`
-- **Asset Name**: NASSCOM Official Benchmark Portal
-- **Registered Target**: `nasscom.in`
-- **Authorized Scope**: Apex domain and passive DNS records
-- **Discovery Policy**: `PUBLIC_PASSIVE` (Passive DNS MX, SPF, DMARC, TXT queries only; no intrusive probes)
-- **Legal & Institutional Authorization Basis**:
-  - Commissioned under **NASSCOM Applied Research Bridge 2.0 (ARB 2.0)**, Problem Statement 5: *"AI-Era Virtual Patching for Security Protection of Indian SMB Digital Businesses."*
-  - Authorized strictly for non-intrusive passive intelligence validation, benchmark DNS hygiene verification, and academic/research prototyping.
+### 4.1 Legal & Operational Boundaries
+- **Research Challenge Scope**: Participation in academic or innovation research programs (such as NASSCOM Applied Research Bridge 2.0 PS-05) **does not** constitute legal or operational authorization to perform security testing against third-party digital assets (including `nasscom.in`). Testing any third-party infrastructure without explicit, written permission violates PREVENT-X policy and legal standards.
+- **RFC Reserved Testing Domain Scope**: Domains designated under **RFC 2606** and **RFC 6761** (such as `example.com`) are permanently reserved by IANA/ICANN for documentation, baseline protocol syntax validation, and software testing. This designation **does not** constitute blanket authorization for offensive security scanning.
+- **Requirement for Live Testing**: Any live external security assessment against production infrastructure strictly requires documented proof of asset ownership or explicit written authorization from the organization.
 
-### 4.2 Target: `example.com`
-- **Asset Name**: RFC 2606 Reference Application
-- **Registered Target**: `example.com`
-- **Authorized Scope**: Apex domain, RDAP registration queries, Certificate Transparency log extraction via `crt.sh`
-- **Discovery Policy**: `PUBLIC_PASSIVE` (Read-only HTTP GET to public registries; connection-pinned and size-capped)
-- **Standards Authorization Basis**:
-  - Designated by the **Internet Engineering Task Force (IETF)** under **RFC 2606** (*"Reserved Top Level DNS Names"*) and **RFC 6761** (*"Special-Use Domain Names"*).
-  - Explicitly reserved for documentation, protocol development, automated test suites, and software validation without risk of operational impact.
+### 4.2 Documented Authorization Evidence for Protocol Testing
+In accordance with these principles, all external live integration tests in the test suite are restricted to `example.com` for non-intrusive protocol interoperability testing:
+
+- **Target Domain**: `example.com`
+- **Owner / Authority**: Internet Assigned Numbers Authority (IANA) / ICANN
+- **Authorization Source**: IETF RFC 2606 & RFC 6761 (Reserved Documentation and Protocol Testing Domain)
+- **Authorized Scope**: Read-only public DNS (port 53), HTTPS RDAP bootstrap query, public Certificate Transparency logs
+- **Policy Enforcement**: `PUBLIC_PASSIVE` (socket-level IP pinning, redirect revalidation, 5 MB response payload limit, 5s/10s timeouts)
+- **Ethical & Operational Rule**: Zero port scanning, zero brute-force, zero exploit delivery, zero resource manipulation
 
 ---
 
@@ -128,3 +125,4 @@ backend/tests/test_live_integrations.py::test_live_rdap_registration_profile_exa
 backend/tests/test_live_integrations.py::test_live_certificate_transparency_example PASSED [ 75%]
 backend/tests/test_live_integrations.py::test_live_full_passive_discovery_pipeline PASSED [ 77%]
 ```
+

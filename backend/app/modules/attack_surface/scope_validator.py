@@ -6,6 +6,7 @@ and separate PUBLIC_PASSIVE vs. AUTHORIZED_INTERNAL discovery policies.
 
 from datetime import datetime, timezone
 import ipaddress
+import json
 import re
 from typing import Optional, Tuple, List, Dict, Any
 from urllib.parse import urlparse
@@ -26,6 +27,14 @@ class ScopeValidationError(HTTPException):
     """Specific HTTP exception for scope validation failures."""
     def __init__(self, detail: str, status_code: int = status.HTTP_400_BAD_REQUEST):
         super().__init__(status_code=status_code, detail=detail)
+
+
+class WorkerAuthorizationError(Exception):
+    """Specific exception raised when Celery worker authorization revalidation fails."""
+    def __init__(self, detail: str, code: str = "WORKER_AUTH_REJECTED"):
+        self.detail = detail
+        self.code = code
+        super().__init__(detail)
 
 
 class ScopeValidator:
@@ -247,6 +256,153 @@ class ScopeValidator:
         }
 
         return asset, effective_target, effective_policy, validation_evidence
+
+    @classmethod
+    def validate_worker_execution_authorization(
+        cls,
+        db: Session,
+        job: Any,
+        max_queue_ttl_seconds: int = 86400,
+    ) -> Dict[str, Any]:
+        """
+        Revalidates authorization boundaries immediately prior to Celery worker job execution:
+        1. Explicit authorization confirmation check (job.authorization_confirmed).
+        2. Job queue expiration / TTL window check (default 24 hours).
+        3. Target asset existence and current is_in_scope status.
+        4. Strict organization / cross-tenant boundary verification.
+        5. Scope validation result evidence trace verification & anti-tampering.
+        6. Initiating user existence, active status, and active organization membership.
+        7. Re-evaluation of discovery policy against asset configuration and SSRF constraints.
+        """
+        from backend.app.models.user import User, OrganizationMembership
+
+        if not getattr(job, "authorization_confirmed", False):
+            raise WorkerAuthorizationError("Job lacks mandatory user authorization confirmation.")
+
+        # 1. Job Queue Expiration (24 hour TTL)
+        now_utc = datetime.now(timezone.utc)
+        created_at = getattr(job, "created_at", None)
+        if created_at is not None:
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            age_seconds = (now_utc - created_at).total_seconds()
+            if age_seconds > max_queue_ttl_seconds:
+                raise WorkerAuthorizationError(
+                    f"Job authorization has expired. Queued age ({int(age_seconds)}s) exceeds maximum allowed TTL ({max_queue_ttl_seconds}s)."
+                )
+
+        # 2. Asset existence and active in-scope status
+        asset_id = getattr(job, "asset_id", None)
+        if not asset_id:
+            raise WorkerAuthorizationError("Job is not linked to any registered asset ID.")
+
+        asset = db.query(ManagedAsset).filter(ManagedAsset.id == asset_id).first()
+        if not asset:
+            raise WorkerAuthorizationError(f"Target asset '{asset_id}' does not exist or has been deleted.")
+
+        # 3. Cross-tenant asset ownership validation
+        if asset.organization_id != job.organization_id:
+            raise WorkerAuthorizationError(
+                f"Cross-tenant authorization violation: Asset '{asset.id}' belongs to organization '{asset.organization_id}', "
+                f"but execution was requested under organization '{job.organization_id}'."
+            )
+
+        if not asset.is_in_scope:
+            raise WorkerAuthorizationError(
+                f"Authorization revoked: Asset '{asset.name}' is currently flagged out-of-scope."
+            )
+
+        # 4. Scope validation result evidence tampering & anti-drift checks
+        scope_evidence_str = getattr(job, "scope_validation_result", None)
+        if not scope_evidence_str:
+            raise WorkerAuthorizationError("Missing mandatory scope validation evidence trace.")
+
+        try:
+            scope_evidence = json.loads(scope_evidence_str) if isinstance(scope_evidence_str, str) else scope_evidence_str
+        except Exception:
+            raise WorkerAuthorizationError("Corrupted or malformed scope validation evidence trace.")
+
+        if scope_evidence.get("status") != "APPROVED":
+            raise WorkerAuthorizationError(f"Scope validation evidence has non-approved status: '{scope_evidence.get('status')}'.")
+
+        if scope_evidence.get("organization_id") != str(job.organization_id):
+            raise WorkerAuthorizationError("Organization ID mismatch in scope validation evidence.")
+
+        if scope_evidence.get("asset_id") != str(job.asset_id):
+            raise WorkerAuthorizationError("Asset ID mismatch in scope validation evidence.")
+
+        # Prevent queued jobs from changing their authorized target
+        if scope_evidence.get("effective_target") != job.target_domain:
+            raise WorkerAuthorizationError(
+                f"Target tampering detected: Queued job target '{job.target_domain}' does not match "
+                f"validated scope target '{scope_evidence.get('effective_target')}'."
+            )
+
+        # Prevent queued jobs from changing their authorized policy
+        if scope_evidence.get("discovery_policy") != job.discovery_policy:
+            raise WorkerAuthorizationError(
+                f"Policy tampering detected: Queued job policy '{job.discovery_policy}' does not match "
+                f"validated scope policy '{scope_evidence.get('discovery_policy')}'."
+            )
+
+        # 5. Initiating user and membership verification
+        user_id = getattr(job, "initiated_by_user_id", None) or getattr(job, "created_by", None)
+        if not user_id:
+            raise WorkerAuthorizationError("Job lacks recorded initiating user ID.")
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise WorkerAuthorizationError(f"Initiating user '{user_id}' does not exist.")
+
+        if not user.is_active:
+            raise WorkerAuthorizationError(f"Initiating user '{user.email}' is deactivated or suspended.")
+
+        membership = db.query(OrganizationMembership).filter(
+            OrganizationMembership.user_id == user_id,
+            OrganizationMembership.organization_id == job.organization_id,
+        ).first()
+        if not membership:
+            raise WorkerAuthorizationError(
+                f"Initiating user '{user.email}' is no longer an active member of organization '{job.organization_id}'."
+            )
+
+        # 6. Scope hierarchy revalidation against current asset target
+        normalized_asset_target = cls.normalize_target(asset.target)
+        candidate = cls.normalize_target(job.target_domain)
+        effective_policy = job.discovery_policy
+
+        if effective_policy == DiscoveryPolicy.AUTHORIZED_INTERNAL:
+            if asset.asset_type not in ("INTERNAL_SERVER", "PRIVATE_NETWORK", "INTERNAL_NETWORK"):
+                if "/" not in normalized_asset_target:
+                    ip_check = SSRFDefense.parse_and_normalize_ip(normalized_asset_target)
+                    if not (ip_check and ip_check.is_private):
+                        raise WorkerAuthorizationError(
+                            f"Asset '{asset.name}' is no longer registered as an internal asset type (asset_type={asset.asset_type})."
+                        )
+        else:
+            # PUBLIC_PASSIVE: target must be within asset apex and must not be private
+            candidate_ip = SSRFDefense.parse_and_normalize_ip(candidate)
+            if candidate_ip:
+                forbidden, reason = SSRFDefense.is_ip_forbidden(candidate_ip, allow_private=False)
+                if forbidden:
+                    raise WorkerAuthorizationError(f"Target '{candidate}' violates PUBLIC_PASSIVE boundary: {reason}")
+            else:
+                asset_apex = cls.extract_apex_domain(normalized_asset_target)
+                candidate_apex = cls.extract_apex_domain(candidate)
+                if candidate_apex != asset_apex and not candidate.endswith(f".{normalized_asset_target}") and candidate != normalized_asset_target:
+                    raise WorkerAuthorizationError(
+                        f"Target '{candidate}' is outside the authorized scope of asset '{asset.name}' ({normalized_asset_target})."
+                    )
+
+        return {
+            "status": "WORKER_AUTH_VERIFIED",
+            "verified_at": now_utc.isoformat(),
+            "job_id": str(getattr(job, "id", "")),
+            "asset_id": str(asset.id),
+            "organization_id": str(job.organization_id),
+            "target": candidate,
+            "policy": effective_policy,
+        }
 
     # Backward compatibility helper for existing callers
     @classmethod

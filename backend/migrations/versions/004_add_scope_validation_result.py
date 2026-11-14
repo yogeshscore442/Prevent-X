@@ -24,3 +24,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_column('discovery_jobs', 'scope_validation_result')
+

@@ -86,3 +86,4 @@ Automated test cases in `backend/tests/test_attack_surface.py` validate all CNAM
 backend/tests/test_attack_surface.py::test_cname_nxdomain_alone_is_never_confirmed_takeover PASSED [ 90%]
 backend/tests/test_attack_surface.py::test_cname_provider_signature_match_and_corroboration PASSED [ 95%]
 ```
+

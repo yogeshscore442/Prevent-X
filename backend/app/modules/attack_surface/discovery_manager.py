@@ -25,6 +25,7 @@ from backend.app.modules.attack_surface.adapters.dns_intelligence import DNSInte
 from backend.app.modules.attack_surface.adapters.rdap import RDAPAdapter
 from backend.app.modules.attack_surface.risk_engine import DeterministicRiskEngine
 from backend.app.modules.attack_surface.evidence_manager import EvidenceManager
+from backend.app.modules.attack_surface.scope_validator import ScopeValidator, WorkerAuthorizationError
 
 logger = logging.getLogger("preventx.attack_surface.manager")
 
@@ -56,6 +57,18 @@ class DiscoveryManager:
         if job.status == DiscoveryJobStatus.CANCELLED:
             logger.info(f"Discovery job {job_id} was cancelled before starting.")
             return job
+
+        # Re-verify complete authorization boundaries prior to worker execution
+        try:
+            ScopeValidator.validate_worker_execution_authorization(db, job)
+        except WorkerAuthorizationError as auth_err:
+            logger.error(f"Worker authorization failed for job {job_id}: {auth_err.detail}")
+            now = datetime.now(timezone.utc)
+            job.status = DiscoveryJobStatus.FAILED
+            job.error_message = f"Worker authorization rejected: {auth_err.detail}"
+            job.completed_at = now
+            db.commit()
+            raise auth_err
 
         now = datetime.now(timezone.utc)
         job.status = DiscoveryJobStatus.RUNNING

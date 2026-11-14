@@ -1,24 +1,31 @@
 """
-PREVENT-X Live External Integration Test Suite (Phase 2 Prompt 1.2)
-Executes REAL passive queries against external networks without active probing or exploitation.
+PREVENT-X Live External Integration Test Suite (Phase 2 Prompt 1.3)
+Executes REAL passive protocol queries against reserved test networks without active probing or exploitation.
 Tests real DNS resolvers, real RDAP registries, and real Certificate Transparency logs.
 
-DOCUMENTED AUTHORIZATION BASIS:
-1. Target: nasscom.in
-   - Authorization Source: NASSCOM Problem Statement 5 Partner
-     (NASSCOM Applied Research Bridge 2.0: 'AI-Era Virtual Patching for Security Protection of Indian SMBs')
-   - Discovery Policy: PUBLIC_PASSIVE
-   - Authorized Scope: Apex domain DNS records (A, MX, TXT)
-   - Data Source: Public Recursive DNS Resolvers (port 53)
-   - Operational Rule: Zero port scanning, zero active HTTP probing, zero authentication attempts.
+SECURITY GOVERNANCE & AUTHORIZATION NOTICE:
+1. Research Participation Boundary:
+   Participation in research challenges or academic competitions (such as NASSCOM ARB 2.0 PS-05)
+   DOES NOT grant legal or operational authorization to perform security testing against
+   corporate, organizational, or third-party digital assets (including nasscom.in).
+   Live security scanning against external production infrastructure without explicit,
+   written authorization from the asset owner is strictly prohibited by PREVENT-X policy
+   and applicable Indian cyber law (IT Act 2000 / DPDP Act 2023).
 
-2. Target: example.com
-   - Authorization Source: IETF RFC 2606 & RFC 6761 Reserved Testing & Documentation Domain
-     (Permanently designated by IANA/ICANN for non-production software testing and verification)
-   - Discovery Policy: PUBLIC_PASSIVE
-   - Authorized Scope: Certificate Transparency public logs & ICANN RDAP registry
-   - Data Source: crt.sh (Sectigo CT Log Reader) & rdap.org (ICANN RDAP Bootstrap)
-   - Operational Rule: Safe, read-only GET requests via SafePinningTransport gate.
+2. RFC Reserved Domain Protocol Scope:
+   RFC 2606 and RFC 6761 designate 'example.com' exclusively for documentation, protocol syntax
+   verification, and standard software testing. This designation DOES NOT constitute a blanket
+   authorization for intrusive security testing or exploitation.
+   In PREVENT-X, 'example.com' is utilized strictly for read-only, non-intrusive protocol
+   interoperability verification (DNS queries, RDAP registration metadata, and public CT logs).
+
+3. Live Target Authorization Evidence:
+   Target: example.com
+   - Category: IETF RFC 2606 / RFC 6761 Reserved Documentation & Protocol Domain
+   - Ownership: Internet Assigned Numbers Authority (IANA) / ICANN
+   - Permitted Scope: Read-only DNS (port 53), HTTPS RDAP bootstrap, public CT logs
+   - Policy: PUBLIC_PASSIVE (socket-pinned, redirect-revalidated, 5 MB payload limit)
+   - Operational Rule: Zero port scanning, zero brute-force, zero exploit delivery.
 """
 
 import json
@@ -43,14 +50,28 @@ from backend.app.modules.attack_surface.discovery_manager import DiscoveryManage
 from backend.app.modules.attack_surface.risk_engine import DeterministicRiskEngine
 
 
+# Recorded authorization evidence registry for external live test targets
+LIVE_TEST_AUTHORIZATION_REGISTRY = {
+    "example.com": {
+        "target": "example.com",
+        "authorization_source": "RFC_2606_RESERVED_PROTOCOL_TESTING",
+        "authorization_scope": "READ_ONLY_PASSIVE_PROTOCOL_SYNTAX",
+        "owner": "Internet Assigned Numbers Authority (IANA)",
+        "policy": "PUBLIC_PASSIVE",
+        "intrusive_testing_allowed": False,
+        "recorded_at": "2026-11-14T18:00:00Z",
+    }
+}
+
+
 @pytest.mark.live_integration
-def test_live_dns_intelligence_nasscom():
+def test_live_dns_intelligence_reserved_domain():
     """
-    Validates real DNS intelligence collection against nasscom.in.
-    Verifies A records, MX records, SPF, and DMARC resolution via public resolvers.
+    Validates real DNS intelligence collection against example.com (RFC 2606 reserved domain).
+    Verifies A, AAAA, MX, SPF, and DMARC resolution via public resolvers.
     """
     adapter = DNSIntelligenceAdapter()
-    result = adapter.resolve_domain("nasscom.in")
+    result = adapter.resolve_domain("example.com")
 
     assert "records" in result
     assert len(result["records"]) > 0
@@ -60,7 +81,7 @@ def test_live_dns_intelligence_nasscom():
     # Must NOT contain internal IPs
     assert len(result["internal_ips_detected"]) == 0
 
-    # Verify SPF and DMARC records
+    # Verify SPF and DMARC records on example.com
     assert result["spf_record"] is not None
     assert "v=spf1" in result["spf_record"].lower()
     assert result["dmarc_record"] is not None
@@ -161,6 +182,14 @@ def test_live_full_passive_discovery_pipeline(db_session, test_tenants):
         initiated_by_user_id=admin_a.id,
         authorization_confirmed=True,
         authorized_at=datetime.now(timezone.utc),
+        scope_validation_result=json.dumps({
+            "status": "APPROVED",
+            "organization_id": str(org_a.id),
+            "asset_id": str(asset.id),
+            "effective_target": "example.com",
+            "discovery_policy": DiscoveryPolicy.PUBLIC_PASSIVE,
+            "authorization_confirmed": True,
+        }),
     )
     db_session.add(job)
     db_session.commit()

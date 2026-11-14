@@ -8,6 +8,7 @@ from uuid import UUID
 from backend.app.workers.celery_app import celery_app
 from backend.app.database.session import SessionLocal
 from backend.app.modules.attack_surface.discovery_manager import DiscoveryManager
+from backend.app.modules.attack_surface.scope_validator import WorkerAuthorizationError
 
 logger = logging.getLogger("preventx.tasks.discovery")
 
@@ -33,6 +34,13 @@ def execute_discovery_job(self, job_id_str: str) -> dict:
             "domains_discovered": job.domains_discovered_count,
             "findings_count": job.findings_count,
             "exposure_score": job.initial_exposure_score,
+        }
+    except WorkerAuthorizationError as auth_err:
+        logger.error(f"Celery task worker authorization rejected for job {job_id_str}: {auth_err.detail}")
+        return {
+            "job_id": job_id_str,
+            "status": "FAILED",
+            "error": f"Worker authorization rejected: {auth_err.detail}",
         }
     except Exception as exc:
         logger.error(f"Celery task failed for discovery job {job_id_str}: {exc}", exc_info=True)

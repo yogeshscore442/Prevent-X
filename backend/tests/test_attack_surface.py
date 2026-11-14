@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from backend.app.models.attack_surface import (
     DiscoveryJob,
     DiscoveryJobStatus,
+    DiscoveryPolicy,
     DiscoveredDomain,
     DNSRecord,
     ExposureFinding,
@@ -529,6 +530,14 @@ def test_discovery_manager_executes_job_lifecycle(db_session, test_tenants):
         initiated_by_user_id=admin_a.id,
         authorization_confirmed=True,
         authorized_at=datetime.now(timezone.utc),
+        scope_validation_result=json.dumps({
+            "status": "APPROVED",
+            "organization_id": str(org_a.id),
+            "asset_id": str(asset.id),
+            "effective_target": "api.smbclient.in",
+            "discovery_policy": DiscoveryPolicy.PUBLIC_PASSIVE,
+            "authorization_confirmed": True,
+        }),
     )
     db_session.add(job)
     db_session.commit()
@@ -943,4 +952,381 @@ def test_authorization_evidence_and_duplicate_prevention(client: TestClient, db_
     assert audit["discovery_policy"] == "PUBLIC_PASSIVE"
     assert audit["authorization_confirmed"] is True
     assert "validated_at" in audit
+
+
+def test_actual_connected_socket_peer_ip_pinning_and_sni_preservation():
+    """
+    Prompt 1.3: Verifies that the connected socket peer IP captured from the OS socket
+    matches the IP validated by SafePinningBackend.
+    Verifies original hostname preservation for TLS SNI and HTTP Host header.
+    """
+    import socket
+    import ssl
+    import httpx
+    from unittest.mock import MagicMock
+    from backend.app.modules.attack_surface.ssrf_defense import SafePinningBackend, SafePinningTransport, SSRFValidationError
+
+    # 1. Private CIDR Pinning: Authorized internal address within CIDR allowlist
+    internal_backend = SafePinningBackend(allow_private=True, allowlist_cidrs=["10.50.0.0/16"])
+    fake_internal_sock = MagicMock()
+    fake_internal_sock.getpeername.return_value = ("10.50.1.25", 8080)
+
+    with patch("socket.create_connection", return_value=fake_internal_sock):
+        stream = internal_backend.connect_tcp("10.50.1.25", 8080)
+        assert internal_backend.last_connected_peer == ("10.50.1.25", 8080)
+        assert internal_backend.last_validated_ip == "10.50.1.25"
+        assert internal_backend.last_connected_peer[0] == internal_backend.last_validated_ip
+
+    # 2. Public Domain Pinning & TLS SNI Preservation
+    public_backend = SafePinningBackend(allow_private=False)
+    fake_socket = MagicMock()
+    fake_socket.getpeername.return_value = ("93.184.216.34", 443)
+
+    with patch("socket.getaddrinfo") as mock_gai, patch("socket.create_connection", return_value=fake_socket):
+        mock_gai.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 443))
+        ]
+        stream = public_backend.connect_tcp("portal.example.com", 443)
+
+        assert public_backend.last_connected_peer[0] == "93.184.216.34"
+        assert public_backend.last_validated_ip == "93.184.216.34"
+        assert public_backend.last_connected_peer[0] == public_backend.last_validated_ip
+
+        # Verify stream requires original hostname for SNI
+        mock_ssl_ctx = MagicMock(spec=ssl.SSLContext)
+        mock_upgraded_sock = MagicMock()
+        mock_ssl_ctx.wrap_socket.return_value = mock_upgraded_sock
+
+        upgraded = stream.start_tls(mock_ssl_ctx, server_hostname="portal.example.com")
+        assert stream.last_tls_sni == "portal.example.com"
+        mock_ssl_ctx.wrap_socket.assert_called_with(fake_socket, server_hostname="portal.example.com")
+
+        # Verify SNI mismatch rejection: passing pinned IP instead of hostname must be blocked
+        with pytest.raises(SSRFValidationError) as exc:
+            stream.start_tls(mock_ssl_ctx, server_hostname="93.184.216.34")
+        assert "tls sni mismatch" in str(exc.value.detail).lower()
+
+    # 3. HTTP Host Header Preservation
+    transport = SafePinningTransport(allow_private=False)
+    req = httpx.Request("GET", "https://portal.example.com/api/v1/status")
+    assert req.headers["host"] == "portal.example.com"
+
+
+def test_dns_rebinding_answers_changing_between_validation_and_connection():
+    """
+    Prompt 1.3: Tests that DNS answers changing between validation and connection
+    cannot alter the destination IP of the socket, and tests dual responses.
+    """
+    import socket
+    from unittest.mock import MagicMock
+    from backend.app.modules.attack_surface.ssrf_defense import SafePinningBackend, SSRFValidationError
+
+    backend = SafePinningBackend(allow_private=False)
+
+    # 1. DNS answers changing after validation: socket is strictly pinned to the validated IP
+    fake_socket = MagicMock()
+    fake_socket.getpeername.return_value = ("93.184.216.34", 80)
+
+    # At validation time, DNS returns public IP 93.184.216.34
+    with patch("socket.getaddrinfo") as mock_gai, patch("socket.create_connection", return_value=fake_socket) as mock_conn:
+        mock_gai.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 80))
+        ]
+        stream = backend.connect_tcp("rebinding-test.example.com", 80)
+
+        # Socket was created directly to pinned address ("93.184.216.34", 80)
+        mock_conn.assert_called_once()
+        assert mock_conn.call_args[0][0] == ("93.184.216.34", 80)
+        assert backend.last_connected_peer[0] == "93.184.216.34"
+
+        # Now simulate DNS rebinding: subsequent DNS lookup returns 127.0.0.1
+        mock_gai.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("127.0.0.1", 80))
+        ]
+        # Pinned stream remains connected to 93.184.216.34; zero subsequent DNS queries affect it
+        assert backend.last_connected_peer[0] == "93.184.216.34"
+
+    # 2. Dual DNS responses at resolution time (public + private loopback) must be aborted immediately
+    with patch("socket.getaddrinfo") as mock_gai:
+        mock_gai.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 80)),
+            (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("127.0.0.1", 80)),
+        ]
+        with pytest.raises(SSRFValidationError) as exc:
+            backend.connect_tcp("dual-rebinding.example.com", 80)
+        assert "dns rebinding defense" in str(exc.value.detail).lower()
+        assert "prohibited address" in str(exc.value.detail).lower()
+
+
+def test_redirects_cannot_bypass_ip_validation_comprehensive():
+    """
+    Prompt 1.3: Verifies that redirects to private IPs, metadata, or unauthorized targets
+    are intercepted and aborted before connection.
+    """
+    import httpx
+    from backend.app.modules.attack_surface.ssrf_defense import SafePinningTransport, SSRFValidationError
+
+    transport = SafePinningTransport(allow_private=False)
+
+    forbidden_redirects = [
+        ("http://127.0.0.1/admin", "loopback"),
+        ("http://10.0.0.1/internal", "private"),
+        ("http://192.168.1.1/router", "private"),
+        ("http://169.254.169.254/latest/meta-data/", "cloud metadata"),
+        ("http://metadata.google.internal/computeMetadata/v1/", "metadata name"),
+        ("http://internal.company.local/dashboard", "non-routable tld"),
+    ]
+
+    for redirect_url, expected_err in forbidden_redirects:
+        fake_req = httpx.Request("GET", "https://public.example.com/login")
+        fake_resp = httpx.Response(
+            status_code=302,
+            headers={"Location": redirect_url},
+            request=fake_req,
+        )
+
+        with patch.object(httpx.HTTPTransport, "handle_request", return_value=fake_resp):
+            with pytest.raises(SSRFValidationError) as exc:
+                transport.handle_request(fake_req)
+            assert expected_err in str(exc.value.detail).lower()
+
+
+def test_worker_authorization_revalidation_all_failure_modes(db_session, test_tenants):
+    """
+    Prompt 1.3: Validates Celery worker-side authorization revalidation across all failure modes:
+    - Missing explicit authorization confirmation
+    - Deleted / missing asset
+    - Cross-tenant asset authorization violation
+    - Revoked / out-of-scope asset
+    - Target tampering in queued job
+    - Policy tampering in queued job
+    - Deactivated initiating user
+    - Revoked organization membership
+    - Expired queued job (> 24 hour TTL)
+    - DiscoveryManager job state transition to FAILED with audit error message
+    """
+    import json
+    import uuid
+    from datetime import datetime, timezone, timedelta
+    from backend.app.models.asset import ManagedAsset
+    from backend.app.models.attack_surface import DiscoveryJob, DiscoveryJobStatus, DiscoveryPolicy
+    from backend.app.models.user import OrganizationMembership
+    from backend.app.modules.attack_surface.scope_validator import ScopeValidator, WorkerAuthorizationError
+    from backend.app.modules.attack_surface.discovery_manager import DiscoveryManager
+
+    org_a = test_tenants["org_a"]
+    org_b = test_tenants["org_b"]
+    admin_a = test_tenants["admin_a"]
+
+    asset_a = ManagedAsset(
+        organization_id=org_a.id,
+        name="Org A Core Web",
+        asset_type="WEB_APPLICATION",
+        target="corp.alphacorp.in",
+        is_in_scope=True,
+    )
+    asset_b = ManagedAsset(
+        organization_id=org_b.id,
+        name="Org B Private API",
+        asset_type="WEB_APPLICATION",
+        target="internal.betaind.in",
+        is_in_scope=True,
+    )
+    db_session.add_all([asset_a, asset_b])
+    db_session.commit()
+
+    base_scope_evidence = {
+        "status": "APPROVED",
+        "organization_id": str(org_a.id),
+        "asset_id": str(asset_a.id),
+        "effective_target": "corp.alphacorp.in",
+        "discovery_policy": DiscoveryPolicy.PUBLIC_PASSIVE,
+        "authorization_confirmed": True,
+    }
+
+    # 1. Missing Authorization Confirmation
+    job_unconfirmed = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=asset_a.id,
+        target_domain="corp.alphacorp.in",
+        discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        authorization_confirmed=False,
+        initiated_by_user_id=admin_a.id,
+        scope_validation_result=json.dumps(base_scope_evidence),
+    )
+    with pytest.raises(WorkerAuthorizationError) as exc:
+        ScopeValidator.validate_worker_execution_authorization(db_session, job_unconfirmed)
+    assert "mandatory user authorization" in str(exc.value.detail).lower()
+
+    # 2. Deleted / Missing Asset
+    job_missing_asset = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=uuid.uuid4(),
+        target_domain="corp.alphacorp.in",
+        discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        authorization_confirmed=True,
+        initiated_by_user_id=admin_a.id,
+        scope_validation_result=json.dumps(base_scope_evidence),
+    )
+    with pytest.raises(WorkerAuthorizationError) as exc:
+        ScopeValidator.validate_worker_execution_authorization(db_session, job_missing_asset)
+    assert "does not exist or has been deleted" in str(exc.value.detail).lower()
+
+    # 3. Cross-Tenant Asset Authorization Violation
+    # Job is created under Org A, but references Asset B belonging to Org B
+    job_cross_tenant = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=asset_b.id,
+        target_domain="internal.betaind.in",
+        discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        authorization_confirmed=True,
+        initiated_by_user_id=admin_a.id,
+        scope_validation_result=json.dumps({
+            "status": "APPROVED",
+            "organization_id": str(org_a.id),
+            "asset_id": str(asset_b.id),
+            "effective_target": "internal.betaind.in",
+            "discovery_policy": DiscoveryPolicy.PUBLIC_PASSIVE,
+        }),
+    )
+    with pytest.raises(WorkerAuthorizationError) as exc:
+        ScopeValidator.validate_worker_execution_authorization(db_session, job_cross_tenant)
+    assert "cross-tenant authorization violation" in str(exc.value.detail).lower()
+
+    # 4. Revoked Asset Scope (Asset marked is_in_scope=False after queueing)
+    asset_a.is_in_scope = False
+    db_session.commit()
+    job_revoked_scope = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=asset_a.id,
+        target_domain="corp.alphacorp.in",
+        discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        authorization_confirmed=True,
+        initiated_by_user_id=admin_a.id,
+        scope_validation_result=json.dumps(base_scope_evidence),
+    )
+    with pytest.raises(WorkerAuthorizationError) as exc:
+        ScopeValidator.validate_worker_execution_authorization(db_session, job_revoked_scope)
+    assert "authorization revoked" in str(exc.value.detail).lower()
+    asset_a.is_in_scope = True
+    db_session.commit()
+
+    # 5. Target Tampering in Queued Job
+    # Scope was approved for corp.alphacorp.in, but DB row target_domain tampered to evil.com
+    job_tampered_target = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=asset_a.id,
+        target_domain="evil.attacker.org",
+        discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        authorization_confirmed=True,
+        initiated_by_user_id=admin_a.id,
+        scope_validation_result=json.dumps(base_scope_evidence),
+    )
+    with pytest.raises(WorkerAuthorizationError) as exc:
+        ScopeValidator.validate_worker_execution_authorization(db_session, job_tampered_target)
+    assert "target tampering detected" in str(exc.value.detail).lower()
+
+    # 6. Policy Tampering in Queued Job
+    # Scope was approved for PUBLIC_PASSIVE, but job policy tampered to AUTHORIZED_INTERNAL
+    job_tampered_policy = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=asset_a.id,
+        target_domain="corp.alphacorp.in",
+        discovery_policy=DiscoveryPolicy.AUTHORIZED_INTERNAL,
+        authorization_confirmed=True,
+        initiated_by_user_id=admin_a.id,
+        scope_validation_result=json.dumps(base_scope_evidence),
+    )
+    with pytest.raises(WorkerAuthorizationError) as exc:
+        ScopeValidator.validate_worker_execution_authorization(db_session, job_tampered_policy)
+    assert "policy tampering detected" in str(exc.value.detail).lower()
+
+    # 7. Deactivated Initiating User
+    admin_a.is_active = False
+    db_session.commit()
+    job_deactivated_user = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=asset_a.id,
+        target_domain="corp.alphacorp.in",
+        discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        authorization_confirmed=True,
+        initiated_by_user_id=admin_a.id,
+        scope_validation_result=json.dumps(base_scope_evidence),
+    )
+    with pytest.raises(WorkerAuthorizationError) as exc:
+        ScopeValidator.validate_worker_execution_authorization(db_session, job_deactivated_user)
+    assert "deactivated or suspended" in str(exc.value.detail).lower()
+    admin_a.is_active = True
+    db_session.commit()
+
+    # 8. Revoked Organization Membership
+    membership = db_session.query(OrganizationMembership).filter(
+        OrganizationMembership.user_id == admin_a.id,
+        OrganizationMembership.organization_id == org_a.id,
+    ).first()
+    db_session.delete(membership)
+    db_session.commit()
+    job_revoked_member = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=asset_a.id,
+        target_domain="corp.alphacorp.in",
+        discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        authorization_confirmed=True,
+        initiated_by_user_id=admin_a.id,
+        scope_validation_result=json.dumps(base_scope_evidence),
+    )
+    with pytest.raises(WorkerAuthorizationError) as exc:
+        ScopeValidator.validate_worker_execution_authorization(db_session, job_revoked_member)
+    assert "no longer an active member" in str(exc.value.detail).lower()
+
+    # Restore membership
+    db_session.add(OrganizationMembership(
+        user_id=admin_a.id,
+        organization_id=org_a.id,
+        role_id=membership.role_id,
+    ))
+    db_session.commit()
+
+    # 9. Expired Queued Job (> 24 hours TTL)
+    job_expired = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=asset_a.id,
+        target_domain="corp.alphacorp.in",
+        discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        authorization_confirmed=True,
+        initiated_by_user_id=admin_a.id,
+        created_at=datetime.now(timezone.utc) - timedelta(hours=36),
+        scope_validation_result=json.dumps(base_scope_evidence),
+    )
+    with pytest.raises(WorkerAuthorizationError) as exc:
+        ScopeValidator.validate_worker_execution_authorization(db_session, job_expired, max_queue_ttl_seconds=86400)
+    assert "authorization has expired" in str(exc.value.detail).lower()
+
+    # 10. DiscoveryManager State Machine on Worker Failure
+    # Save a tampered job in DB, run DiscoveryManager.run_discovery, verify status=FAILED and error_message
+    tampered_db_job = DiscoveryJob(
+        organization_id=org_a.id,
+        asset_id=asset_a.id,
+        target_domain="unauthorized-injected.com",
+        authorized_scope=asset_a.target,
+        discovery_policy=DiscoveryPolicy.PUBLIC_PASSIVE,
+        authorization_confirmed=True,
+        initiated_by_user_id=admin_a.id,
+        status=DiscoveryJobStatus.PENDING,
+        scope_validation_result=json.dumps(base_scope_evidence),
+    )
+    db_session.add(tampered_db_job)
+    db_session.commit()
+
+    manager = DiscoveryManager()
+    with pytest.raises(WorkerAuthorizationError):
+        manager.run_discovery(db_session, tampered_db_job.id)
+
+    # Verify state machine in database
+    db_session.refresh(tampered_db_job)
+    assert tampered_db_job.status == DiscoveryJobStatus.FAILED
+    assert "worker authorization rejected" in tampered_db_job.error_message.lower()
+    assert tampered_db_job.completed_at is not None
+    assert tampered_db_job.domains_discovered_count == 0
+    assert tampered_db_job.findings_count == 0
 

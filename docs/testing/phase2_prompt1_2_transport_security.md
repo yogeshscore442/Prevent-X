@@ -85,3 +85,4 @@ backend/tests/test_attack_surface.py::test_safe_transport_response_size_and_redi
 1. **Deterministic Pinning**: The IP address validated during pre-flight checks is the exact IP address the TCP socket connects to.
 2. **Zero Insecure TLS Degradation**: No TLS verification bypasses (`verify=False` or `check_hostname=False`) exist in the PREVENT-X codebase.
 3. **Passive Integrity**: Passive intelligence gathering adapters (Certificate Transparency, RDAP, DNS) operate through this secure transport, ensuring that external API queries never compromise the internal network.
+

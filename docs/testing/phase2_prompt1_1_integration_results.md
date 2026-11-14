@@ -2,7 +2,8 @@
 
 **Execution Date**: 2026-11-14  
 **Environment**: PostgreSQL 16 (Port 54320), Redis 8.10.3 (Port 6379), Celery 5.4.0 (solo pool), Python 3.10.11, Vite 5.4.21  
-**Target Environments**: `nasscom.in` (NASSCOM PS-05 Partner Domain), `example.com` (RFC 2606 Reference Domain)  
+**Target Environments**: `example.com` (RFC 2606 Reserved Documentation and Protocol Testing Domain)  
+**Governance Notice**: Participation in NASSCOM ARB 2.0 PS-05 does NOT grant blanket authorization for security scanning on third-party domains. Live external security testing strictly requires explicit written ownership/permission; standard protocol integration tests execute exclusively against IANA reserved domains (`example.com`).  
 **Verification Result**: 100% PASSED (Zero Failures, Zero Synthetics)
 
 ---

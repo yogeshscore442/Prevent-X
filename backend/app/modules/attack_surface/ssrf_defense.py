@@ -7,6 +7,7 @@ cloud metadata, DNS rebinding, redirect exploitation, and payload bomb attacks.
 import ipaddress
 import re
 import socket
+import ssl
 from typing import Optional, Tuple, List, Union, Dict, Any
 from urllib.parse import urlparse
 import dns.resolver
@@ -389,6 +390,37 @@ class SSRFDefense:
         return client
 
 
+class SafePinningStream(SyncStream):
+    """
+    SyncStream wrapper that captures TLS SNI parameters and verifies
+    that server_hostname matches the original FQDN rather than the pinned IP address.
+    """
+    def __init__(self, sock: socket.socket, target_host: str, pinned_ip: str):
+        super().__init__(sock)
+        self.target_host = target_host
+        self.pinned_ip = pinned_ip
+        self.last_tls_sni: Optional[str] = None
+
+    def start_tls(
+        self,
+        ssl_context: ssl.SSLContext,
+        server_hostname: Optional[str] = None,
+        timeout: Optional[float] = None,
+    ) -> SyncStream:
+        self.last_tls_sni = server_hostname
+        # Strict invariant: SNI must match original host FQDN, never the pinned IP
+        if server_hostname != self.target_host:
+            raise SSRFValidationError(
+                f"TLS SNI mismatch: expected original hostname '{self.target_host}', got '{server_hostname}'"
+            )
+        upgraded = super().start_tls(ssl_context, server_hostname=server_hostname, timeout=timeout)
+        if isinstance(upgraded, SyncStream):
+            upgraded_stream = SafePinningStream(upgraded._sock, self.target_host, self.pinned_ip)
+            upgraded_stream.last_tls_sni = server_hostname
+            return upgraded_stream
+        return upgraded
+
+
 class SafePinningBackend(SyncBackend):
     """
     Hardened network backend that resolves hostnames, strictly validates every resolved
@@ -405,6 +437,9 @@ class SafePinningBackend(SyncBackend):
         self.allow_private = allow_private
         self.allowlist_cidrs = allowlist_cidrs
         self.resolver_timeout = resolver_timeout
+        self.last_connected_peer: Optional[Tuple[str, int]] = None
+        self.last_validated_ip: Optional[str] = None
+        self.last_stream: Optional[SafePinningStream] = None
 
     def connect_tcp(
         self,
@@ -498,9 +533,17 @@ class SafePinningBackend(SyncBackend):
                     sock.setsockopt(*opt)
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
-        # Returns SyncStream. httpcore will invoke stream.start_tls(ssl_context, server_hostname=host)
-        # where server_hostname is the original FQDN (host), preserving full SNI and certificate validation.
-        return SyncStream(sock)
+        # Record actual socket peer name from the operating system
+        try:
+            peer = sock.getpeername()
+            self.last_connected_peer = (str(peer[0]), int(peer[1]))
+        except OSError:
+            self.last_connected_peer = (pinned_ip, port)
+        self.last_validated_ip = pinned_ip
+
+        stream = SafePinningStream(sock, target_host=clean_host, pinned_ip=pinned_ip)
+        self.last_stream = stream
+        return stream
 
 
 class SafePinningTransport(httpx.HTTPTransport):
@@ -521,13 +564,13 @@ class SafePinningTransport(httpx.HTTPTransport):
         self.allowlist_cidrs = allowlist_cidrs
         self.max_response_size = max_response_size
 
-        backend = SafePinningBackend(
+        self.backend = SafePinningBackend(
             allow_private=allow_private,
             allowlist_cidrs=allowlist_cidrs,
         )
         self._pool = httpcore.ConnectionPool(
             ssl_context=self._pool._ssl_context,
-            network_backend=backend,
+            network_backend=self.backend,
             http1=True,
             http2=False,
             retries=0,  # Disable blind retries to avoid rebinding races
@@ -540,6 +583,18 @@ class SafePinningTransport(httpx.HTTPTransport):
         )
 
         response = super().handle_request(request)
+
+        # Enforce redirect re-validation at transport level
+        if response.is_redirect and "location" in response.headers:
+            redirect_url = response.headers["location"]
+            full_redirect = str(request.url.join(redirect_url))
+            try:
+                SSRFDefense.validate_url_or_ip(
+                    full_redirect, allow_private=self.allow_private, allowlist_cidrs=self.allowlist_cidrs
+                )
+            except SSRFValidationError as e:
+                response.close()
+                raise e
 
         # Enforce response payload limits based on Content-Length
         content_length = response.headers.get("Content-Length")
