@@ -204,9 +204,9 @@ class DeterministicRiskEngine(RiskScoringEngineInterface):
         cname_status = dns_data.get("cname_takeover_status")
         dangling_candidates = dns_data.get("dangling_cname_candidates", [])
 
-        if cname_status == TakeoverVerificationStatus.VERIFIED_UNCLAIMED_RESOURCE:
+        if cname_status in (TakeoverVerificationStatus.VERIFIED_UNCLAIMED_RESOURCE, TakeoverVerificationStatus.CONFIRMED_TAKEOVER):
             takeover_score = self.WEIGHT_RESOURCE_TAKEOVER
-            takeover_desc = f"Verified unclaimed external resource detected: CNAME alias points to non-existent cloud tenant ({', '.join(dangling_candidates[:2])})."
+            takeover_desc = f"Verified unclaimed external resource detected: CNAME alias points to unallocated cloud tenant ({', '.join(dangling_candidates[:2])}) with confirmed provider error signature."
             takeover_impact = "HIGH"
             takeover_quality = "HIGH"
         elif dangling_candidates:

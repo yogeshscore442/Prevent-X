@@ -10,6 +10,8 @@ from typing import List, Dict, Any, Optional, Set, Tuple
 import dns.resolver
 import dns.exception
 from backend.app.modules.attack_surface.interfaces import DNSIntelligenceProvider
+from backend.app.models.attack_surface import TakeoverVerificationStatus
+from backend.app.modules.attack_surface.cname_verifier import CNAMEVerifier, CNAMEVerificationResult
 
 logger = logging.getLogger("preventx.attack_surface.dns")
 
@@ -37,6 +39,7 @@ class DNSIntelligenceAdapter(DNSIntelligenceProvider):
         self.resolver = dns.resolver.Resolver()
         self.resolver.timeout = timeout
         self.resolver.lifetime = timeout
+        self.cname_verifier = CNAMEVerifier(resolver_timeout=timeout)
         if nameservers:
             self.resolver.nameservers = nameservers
         else:
@@ -97,13 +100,11 @@ class DNSIntelligenceAdapter(DNSIntelligenceProvider):
                 "resolution_status": "RESOLVED",
                 "collected_at": now,
             })
-            # Check dangling CNAME patterns
-            for pattern in DANGLING_CNAME_PATTERNS:
-                if pattern in clean_cname.lower():
-                    dangling_candidates.append(clean_cname)
-                    # Non-intrusively inspect CNAME target resolution
-                    cname_status = self._check_cname_target_status(clean_cname)
-                    break
+            # Check dangling CNAME patterns via CNAMEVerifier
+            verif = self.cname_verifier.verify_cname(domain, clean_cname, allow_http_probe=True)
+            if verif.provider:
+                dangling_candidates.append(clean_cname)
+                cname_status = verif.status
 
         # 4. Query MX records
         mx_records = self._query_records(domain, "MX")
@@ -173,24 +174,12 @@ class DNSIntelligenceAdapter(DNSIntelligenceProvider):
             "has_ns": len(ns_records) > 0,
         }
 
-    def _check_cname_target_status(self, cname_target: str) -> str:
+    def _check_cname_target_status(self, cname_target: str, domain: str = "sub.domain.local") -> str:
         """
-        Safely inspects CNAME target resolution without attempting to claim or modify external resources.
-        Returns:
-            - VERIFIED_UNCLAIMED_RESOURCE if target yields NXDOMAIN.
-            - POTENTIAL_DANGLING_CNAME if target resolves to an active IP/host (unverified).
-            - UNVERIFIED_RESOURCE on resolution timeout/error.
+        Safely inspects CNAME target resolution and provider signatures via CNAMEVerifier.
         """
-        try:
-            answers = self.resolver.resolve(cname_target, "A")
-            if answers:
-                return "POTENTIAL_DANGLING_CNAME"
-        except dns.resolver.NXDOMAIN:
-            # The target domain does not exist on the third-party provider!
-            return "VERIFIED_UNCLAIMED_RESOURCE"
-        except (dns.resolver.NoAnswer, dns.resolver.Timeout, dns.exception.DNSException):
-            return "UNVERIFIED_RESOURCE"
-        return "POTENTIAL_DANGLING_CNAME"
+        verif = self.cname_verifier.verify_cname(domain, cname_target, allow_http_probe=False)
+        return verif.status
 
     def _query_records(self, domain: str, rtype: str) -> List[Tuple[str, Optional[int]]]:
         results: List[Tuple[str, Optional[int]]] = []

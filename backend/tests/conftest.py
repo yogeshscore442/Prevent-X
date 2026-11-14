@@ -20,6 +20,7 @@ from backend.app.models.role import Role
 from backend.app.models.user import OrganizationMembership, User
 from backend.app.security.passwords import hash_password
 from backend.app.security.permissions import SystemRole
+from backend.app.security.rate_limiter import rate_limiter
 from backend.app.services.bootstrap_service import initialize_system_roles_and_permissions
 
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
@@ -74,7 +75,12 @@ def db_session():
 
 @pytest.fixture
 def client(db_session):
-    """FastAPI TestClient with overridden get_db dependency."""
+    """FastAPI TestClient with overridden get_db dependency and fresh rate-limit quota."""
+    rate_limiter.reset("global:testclient")
+    rate_limiter.reset("global:127.0.0.1")
+    rate_limiter.reset("auth:testclient")
+    rate_limiter.reset("auth:127.0.0.1")
+
     def override_get_db():
         try:
             yield db_session

@@ -8,6 +8,7 @@ import json
 import uuid
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock
+import dns.resolver
 import pytest
 from fastapi.testclient import TestClient
 
@@ -117,7 +118,7 @@ def test_scope_validator_enforces_asset_ownership_and_hierarchy(db_session, test
     assert "outside the authorized scope" in str(exc.value.detail).lower()
 
     # 3. Success for exact target or valid subdomain
-    val_asset, effective_target, effective_policy = ScopeValidator.validate_and_authorize_job(
+    val_asset, effective_target, effective_policy, evidence = ScopeValidator.validate_and_authorize_job(
         db=db_session,
         organization_id=org_a.id,
         asset_id=asset.id,
@@ -127,6 +128,9 @@ def test_scope_validator_enforces_asset_ownership_and_hierarchy(db_session, test
     assert val_asset.id == asset.id
     assert effective_target == "sub.portal.smbclient.in"
     assert effective_policy == "PUBLIC_PASSIVE"
+    assert evidence["status"] == "APPROVED"
+    assert evidence["authorized_scope"] == asset.target
+    assert evidence["asset_id"] == str(asset.id)
 
 
 def test_ssrf_defense_alternate_encodings_and_mapped_ipv6():
@@ -224,7 +228,7 @@ def test_public_passive_vs_authorized_internal_policies(db_session, test_tenants
         )
 
     # C) Under AUTHORIZED_INTERNAL with permission, authorized IP within CIDR is allowed
-    val_asset, effective_target, pol = ScopeValidator.validate_and_authorize_job(
+    val_asset, effective_target, pol, evidence = ScopeValidator.validate_and_authorize_job(
         db=db_session,
         organization_id=org_a.id,
         asset_id=internal_asset.id,
@@ -235,6 +239,8 @@ def test_public_passive_vs_authorized_internal_policies(db_session, test_tenants
     )
     assert effective_target == "10.50.1.5"
     assert pol == DiscoveryPolicy.AUTHORIZED_INTERNAL
+    assert evidence["discovery_policy"] == DiscoveryPolicy.AUTHORIZED_INTERNAL
+    assert "10.50.0.0/16" in evidence["allowlist_cidrs"]
 
     # D) Target outside approved CIDR (e.g. 192.168.1.1) is rejected even under AUTHORIZED_INTERNAL
     with pytest.raises(ScopeValidationError) as exc:
@@ -702,3 +708,239 @@ def test_api_cross_tenant_attack_surface_isolation(client: TestClient, db_sessio
     # Must be strictly rejected with HTTP 403 Forbidden
     assert resp.status_code == 403
     assert "cross-tenant" in resp.json()["detail"].lower()
+
+
+# ==============================================================================
+# 7. PHASE 2 PROMPT 1.2: CONNECTION-LEVEL PINNING, CNAME EVIDENCE, & AUDIT
+# ==============================================================================
+
+def test_connection_pinning_and_dns_rebinding_defense():
+    from backend.app.modules.attack_surface.ssrf_defense import SafePinningBackend, SSRFValidationError
+
+    backend = SafePinningBackend(allow_private=False)
+
+    # 1. Dual DNS response containing a public IP and a private loopback
+    with patch("dns.resolver.Resolver.resolve") as mock_resolve:
+        mock_resolve.return_value = ["93.184.216.34", "127.0.0.1"]
+        with pytest.raises(SSRFValidationError) as exc:
+            backend.connect_tcp("rebind.example.com", 80)
+        assert "dns rebinding defense" in str(exc.value.detail).lower()
+        assert "prohibited address" in str(exc.value.detail).lower()
+
+    # 2. DNS rebinding to RFC 1918 private address
+    with patch("dns.resolver.Resolver.resolve") as mock_resolve:
+        mock_resolve.return_value = ["10.0.0.1"]
+        with pytest.raises(SSRFValidationError) as exc:
+            backend.connect_tcp("private.example.com", 80)
+        assert "private" in str(exc.value.detail).lower()
+
+    # 3. Direct IPv6 loopback
+    with pytest.raises(SSRFValidationError) as exc:
+        backend.connect_tcp("::1", 80)
+    assert "loopback" in str(exc.value.detail).lower()
+
+    # 4. Direct Cloud Hypervisor Metadata
+    for meta in ["169.254.169.254", "100.100.100.200", "192.0.0.192"]:
+        with pytest.raises(SSRFValidationError) as exc:
+            backend.connect_tcp(meta, 80)
+        assert "cloud metadata" in str(exc.value.detail).lower()
+
+    # 5. Non-routable internal TLD
+    with pytest.raises(SSRFValidationError) as exc:
+        backend.connect_tcp("internal.server.local", 80)
+    assert "non-routable tld" in str(exc.value.detail).lower()
+
+
+def test_safe_transport_response_size_and_redirects():
+    import httpx
+    from backend.app.modules.attack_surface.ssrf_defense import SSRFDefense, SafePinningTransport, SSRFValidationError
+
+    # 1. Redirect to private IP must be intercepted and blocked
+    client = SSRFDefense.create_safe_client(allow_private=False)
+    fake_redirect_resp = httpx.Response(
+        status_code=302,
+        headers={"Location": "http://10.0.0.1/admin"},
+        request=httpx.Request("GET", "https://public.example.com/login"),
+    )
+    with pytest.raises(SSRFValidationError) as exc:
+        client._event_hooks["response"][0](fake_redirect_resp)
+    assert "private" in str(exc.value.detail).lower()
+
+    # 2. Redirect to cloud metadata must be blocked
+    fake_meta_resp = httpx.Response(
+        status_code=301,
+        headers={"Location": "http://169.254.169.254/latest/meta-data/"},
+        request=httpx.Request("GET", "https://public.example.com/"),
+    )
+    with pytest.raises(SSRFValidationError) as exc:
+        client._event_hooks["response"][0](fake_meta_resp)
+    assert "cloud metadata" in str(exc.value.detail).lower()
+
+    # 3. Enforce maximum response payload size limit
+    transport = SafePinningTransport(allow_private=False, max_response_size=1024)
+    huge_request = httpx.Request("GET", "https://example.com/large-archive.zip")
+    with patch.object(httpx.HTTPTransport, "handle_request") as mock_handle:
+        mock_handle.return_value = httpx.Response(
+            status_code=200,
+            headers={"Content-Length": "10485760"},  # 10 MB > 1024 bytes
+            request=huge_request,
+        )
+        with pytest.raises(SSRFValidationError) as exc:
+            transport.handle_request(huge_request)
+        assert "exceeds maximum payload limit" in str(exc.value.detail).lower()
+
+
+def test_cname_nxdomain_alone_is_never_confirmed_takeover():
+    from backend.app.modules.attack_surface.cname_verifier import CNAMEVerifier
+    from backend.app.models.attack_surface import TakeoverVerificationStatus, EvidenceNature
+
+    verifier = CNAMEVerifier()
+
+    # Mock DNS returning NXDOMAIN for Azure App Service target, but HTTP check is inconclusive
+    with patch("dns.resolver.Resolver.resolve", side_effect=dns.resolver.NXDOMAIN):
+        result = verifier.verify_cname(
+            subdomain="portal.smbclient.in",
+            cname_target="portal.azurewebsites.net",
+            allow_http_probe=False,  # DNS only
+        )
+
+    # Must be classified as POTENTIAL_DANGLING_CNAME, NEVER CONFIRMED_TAKEOVER
+    assert result.status == TakeoverVerificationStatus.POTENTIAL_DANGLING_CNAME
+    assert result.status != TakeoverVerificationStatus.CONFIRMED_TAKEOVER
+    assert result.evidence_nature == EvidenceNature.POTENTIAL_WEAKNESS
+    assert "nxdomain" in result.reason.lower()
+
+
+def test_cname_provider_signature_match_and_corroboration():
+    from backend.app.modules.attack_surface.cname_verifier import CNAMEVerifier
+    from backend.app.models.attack_surface import TakeoverVerificationStatus, EvidenceNature
+
+    verifier = CNAMEVerifier()
+
+    # 1. Positive Case: GitHub Pages with confirmed unclaimed error signature
+    with patch.object(verifier, "_probe_http_signature") as mock_probe:
+        mock_probe.return_value = (404, "There isn't a GitHub Pages site here", "404 - There isn't a GitHub Pages site here")
+        pos_result = verifier.verify_cname(
+            subdomain="docs.smbclient.in",
+            cname_target="smbclient.github.io",
+            allow_http_probe=True,
+        )
+
+    assert pos_result.status == TakeoverVerificationStatus.VERIFIED_UNCLAIMED_RESOURCE
+    assert pos_result.evidence_nature == EvidenceNature.VERIFIED_ISSUE
+    assert pos_result.confidence == "HIGH"
+    assert pos_result.matched_signature == "There isn't a GitHub Pages site here"
+
+    # 2. Negative Case: Shopify CNAME with active website (no error signature)
+    with patch.object(verifier, "_probe_http_signature") as mock_probe:
+        mock_probe.return_value = None  # Active 200 OK without signature
+        with patch("dns.resolver.Resolver.resolve") as mock_res:
+            mock_res.return_value = ["23.227.38.65"]
+            neg_result = verifier.verify_cname(
+                subdomain="store.smbclient.in",
+                cname_target="shops.myshopify.com",
+                allow_http_probe=True,
+            )
+
+    assert neg_result.status == TakeoverVerificationStatus.UNVERIFIED_RESOURCE
+    assert neg_result.confidence == "LOW"
+
+    # 3. Independent Corroboration: Transitions to CONFIRMED_TAKEOVER only with manual analyst signoff
+    with patch.object(verifier, "_probe_http_signature") as mock_probe:
+        mock_probe.return_value = (404, "<Code>NoSuchBucket</Code>", "<Error><Code>NoSuchBucket</Code></Error>")
+        confirmed_result = verifier.verify_cname(
+            subdomain="assets.smbclient.in",
+            cname_target="smbclient-assets.s3.amazonaws.com",
+            allow_http_probe=True,
+            independent_analyst_verified=True,
+        )
+
+    assert confirmed_result.status == TakeoverVerificationStatus.CONFIRMED_TAKEOVER
+    assert confirmed_result.evidence_nature == EvidenceNature.VERIFIED_ISSUE
+
+
+def test_authorization_evidence_and_duplicate_prevention(client: TestClient, db_session, test_tenants):
+    from backend.app.models.attack_surface import DiscoveryJob
+    org_a = test_tenants["org_a"]
+
+    # 1. Log in as admin_a
+    login_resp = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@alphacorp.in", "password": "AlphaAdminPass123!"},
+    )
+    token = login_resp.json()["tokens"]["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 2. Create asset under Org A
+    asset = ManagedAsset(
+        organization_id=org_a.id,
+        name="Production Web Portal",
+        asset_type="WEB_APPLICATION",
+        target="corp.alphacorp.in",
+        environment="PRODUCTION",
+        criticality="HIGH",
+        is_in_scope=True,
+    )
+    db_session.add(asset)
+    db_session.commit()
+
+    # 3. Test Unauthorized target substitution (competitor domain)
+    bad_payload = {
+        "asset_id": str(asset.id),
+        "target_domain": "unauthorized-target.com",
+        "authorization_confirmed": True,
+    }
+    bad_resp = client.post("/api/v1/attack-surface/discovery", json=bad_payload, headers=headers)
+    assert bad_resp.status_code == 403
+    assert "outside the authorized scope" in bad_resp.json()["detail"].lower()
+
+    # 4. Test Missing authorization confirmation checkbox
+    unconfirmed_payload = {
+        "asset_id": str(asset.id),
+        "target_domain": "corp.alphacorp.in",
+        "authorization_confirmed": False,
+    }
+    unconfirmed_resp = client.post("/api/v1/attack-surface/discovery", json=unconfirmed_payload, headers=headers)
+    assert unconfirmed_resp.status_code == 403
+    assert "mandatory" in unconfirmed_resp.json()["detail"].lower()
+
+    # 5. Create legitimate discovery job
+    valid_payload = {
+        "asset_id": str(asset.id),
+        "target_domain": "corp.alphacorp.in",
+        "authorization_confirmed": True,
+    }
+    with patch("backend.app.modules.attack_surface.tasks.discovery_tasks.execute_discovery_job.delay"):
+        resp1 = client.post("/api/v1/attack-surface/discovery", json=valid_payload, headers=headers)
+        assert resp1.status_code == 202
+        job1_data = resp1.json()
+        job1_id = job1_data["id"]
+
+        # 6. Duplicate job creation prevention (replay protection)
+        resp2 = client.post("/api/v1/attack-surface/discovery", json=valid_payload, headers=headers)
+        assert resp2.status_code == 409
+        assert "already in progress" in resp2.json()["detail"].lower()
+
+    # 7. Verify all 8 required authorization audit fields on DiscoveryJob
+    job = db_session.query(DiscoveryJob).filter(DiscoveryJob.id == uuid.UUID(job1_id)).first()
+    assert job is not None
+    assert job.asset_id == asset.id
+    assert job.organization_id == org_a.id
+    assert job.target_domain == "corp.alphacorp.in"
+    assert job.discovery_policy == "PUBLIC_PASSIVE"
+    assert job.authorization_confirmed is True
+    assert job.authorized_scope == asset.target
+    assert job.authorized_at is not None
+    assert job.scope_validation_result is not None
+
+    # Inspect scope validation JSON
+    audit = json.loads(job.scope_validation_result)
+    assert audit["status"] == "APPROVED"
+    assert audit["organization_id"] == str(org_a.id)
+    assert audit["asset_id"] == str(asset.id)
+    assert audit["authorized_scope"] == asset.target
+    assert audit["effective_target"] == "corp.alphacorp.in"
+    assert audit["discovery_policy"] == "PUBLIC_PASSIVE"
+    assert audit["authorization_confirmed"] is True
+    assert "validated_at" in audit
+

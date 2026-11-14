@@ -147,3 +147,4 @@ The Attack Surface Intelligence Engine (MOD-01) satisfies all enterprise securit
 - **Strict Tenant Scoping**: Cross-tenant discovery, asset manipulation, and job cancellations are completely prevented.
 - **Audit Logging**: Full attribution recorded for every action.
 - **No Synthetic Data**: Every finding is backed by empirical, reproducible technical evidence.
+

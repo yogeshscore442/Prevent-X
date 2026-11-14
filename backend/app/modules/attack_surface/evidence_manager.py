@@ -235,18 +235,30 @@ class EvidenceManager:
         # ----------------------------------------------------------------------
         cname_status = dns_data.get("cname_takeover_status")
         for dangling in dns_data.get("dangling_cname_candidates", []):
-            if cname_status == "VERIFIED_UNCLAIMED_RESOURCE":
+            if cname_status == TakeoverVerificationStatus.CONFIRMED_TAKEOVER:
+                v_status = TakeoverVerificationStatus.CONFIRMED_TAKEOVER
+                nature = EvidenceNature.VERIFIED_ISSUE
+                sev = FindingSeverity.CRITICAL
+                conf = FindingConfidence.HIGH
+                desc = f"Confirmed unclaimed external cloud tenancy ({dangling}) corroborated by provider error signature and independent verification."
+            elif cname_status == TakeoverVerificationStatus.VERIFIED_UNCLAIMED_RESOURCE:
                 v_status = TakeoverVerificationStatus.VERIFIED_UNCLAIMED_RESOURCE
                 nature = EvidenceNature.VERIFIED_ISSUE
                 sev = FindingSeverity.HIGH
                 conf = FindingConfidence.HIGH
-                desc = f"CNAME alias points to external cloud infrastructure ({dangling}) which yielded NXDOMAIN during resolution, indicating the third-party tenant is unclaimed."
-            else:
+                desc = f"CNAME alias points to external cloud infrastructure ({dangling}) with confirmed provider-specific unclaimed error signature. Risk of external subdomain takeover."
+            elif cname_status == TakeoverVerificationStatus.POTENTIAL_DANGLING_CNAME:
                 v_status = TakeoverVerificationStatus.POTENTIAL_DANGLING_CNAME
-                nature = EvidenceNature.UNVERIFIED_FINDING
+                nature = EvidenceNature.POTENTIAL_WEAKNESS
                 sev = FindingSeverity.MEDIUM
                 conf = FindingConfidence.MEDIUM
-                desc = f"CNAME alias points to external cloud hosting ({dangling}). Ownership of the cloud resource is currently unverified."
+                desc = f"CNAME alias points to external cloud hosting ({dangling}). DNS or provider indicator detected, but unclaimed status is unconfirmed without signature match."
+            else:
+                v_status = TakeoverVerificationStatus.UNVERIFIED_RESOURCE
+                nature = EvidenceNature.UNVERIFIED_FINDING
+                sev = FindingSeverity.LOW
+                conf = FindingConfidence.LOW
+                desc = f"CNAME alias points to external cloud hosting ({dangling}). Target connectivity or resolution check was inconclusive."
 
             findings.append(
                 ExposureFinding(

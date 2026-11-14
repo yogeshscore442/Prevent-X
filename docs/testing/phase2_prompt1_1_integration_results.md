@@ -163,3 +163,4 @@ dist/assets/index-Ck9Rjt2L.js   350.43 kB │ gzip: 98.36 kB
 | **Live Network Tests** | Real CT, DNS, and RDAP against external domains | Tested against `nasscom.in` and `example.com` | **PASS** |
 | **Celery Pipeline** | End-to-end task execution | Verified via Redis broker and PostgreSQL 16 | **PASS** |
 | **Full Regression** | 100% test pass rate | 43/43 Backend, 16/16 Frontend, 0 build errors | **PASS** |
+

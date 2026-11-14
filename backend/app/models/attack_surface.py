@@ -114,6 +114,7 @@ class DiscoveryJob(Base, TimestampMixin):
     findings_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     initial_exposure_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     risk_score_details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON-encoded dict
+    scope_validation_result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON-encoded authorization evidence
 
     # Relationships
     discovered_domains: Mapped[List["DiscoveredDomain"]] = relationship("DiscoveredDomain", back_populates="job", cascade="all, delete-orphan")

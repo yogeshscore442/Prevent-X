@@ -44,3 +44,4 @@ def downgrade() -> None:
 
     op.drop_index('ix_discovery_jobs_policy', table_name='discovery_jobs')
     op.drop_column('discovery_jobs', 'discovery_policy')
+

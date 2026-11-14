@@ -46,6 +46,7 @@ class DiscoveryJobResponse(BaseModel):
     findings_count: int
     initial_exposure_score: Optional[float] = None
     risk_score_details: Optional[str] = None
+    scope_validation_result: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

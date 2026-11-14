@@ -48,7 +48,7 @@ class AttackSurfaceService:
         Validates scope boundary, stores job, and enqueues Celery background task.
         """
         # 1. Enforce scope & authorization boundary
-        asset, validated_domain, policy = ScopeValidator.validate_and_authorize_job(
+        asset, validated_domain, policy, validation_evidence = ScopeValidator.validate_and_authorize_job(
             db=db,
             organization_id=organization_id,
             asset_id=asset_id,
@@ -84,6 +84,7 @@ class AttackSurfaceService:
             initiated_by_user_id=user_id,
             authorization_confirmed=True,
             authorized_at=now,
+            scope_validation_result=json.dumps(validation_evidence),
         )
         db.add(job)
         db.flush()

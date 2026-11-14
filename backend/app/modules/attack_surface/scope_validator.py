@@ -4,9 +4,10 @@ Enforces multi-tenant boundaries, SSRF prevention, asset scope verification,
 and separate PUBLIC_PASSIVE vs. AUTHORIZED_INTERNAL discovery policies.
 """
 
+from datetime import datetime, timezone
 import ipaddress
 import re
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
 from urllib.parse import urlparse
 from uuid import UUID
 from sqlalchemy.orm import Session
@@ -95,12 +96,12 @@ class ScopeValidator:
         discovery_policy: str = DiscoveryPolicy.PUBLIC_PASSIVE,
         user_permissions: Optional[List[str]] = None,
         user_has_internal_permission: Optional[bool] = None,
-    ) -> Tuple[ManagedAsset, str, str]:
+    ) -> Tuple[ManagedAsset, str, str, Dict[str, Any]]:
         """
         Performs the complete authorization and scope boundary check.
         Enforces separate rules for PUBLIC_PASSIVE vs. AUTHORIZED_INTERNAL discovery.
         Returns:
-            Tuple[ManagedAsset, str, str]: (validated_asset, effective_target, effective_policy)
+            Tuple[ManagedAsset, str, str, Dict[str, Any]]: (validated_asset, effective_target, effective_policy, validation_evidence)
         """
         # 1. Mandatory authorization confirmation checkbox
         if not authorization_confirmed:
@@ -227,7 +228,25 @@ class ScopeValidator:
 
             effective_target = candidate
 
-        return asset, effective_target, effective_policy
+        now_utc = datetime.now(timezone.utc)
+        candidate_is_ip = bool(SSRFDefense.parse_and_normalize_ip(effective_target))
+        validation_evidence = {
+            "status": "APPROVED",
+            "organization_id": str(organization_id),
+            "asset_id": str(asset.id),
+            "asset_name": asset.name,
+            "asset_type": asset.asset_type,
+            "authorized_scope": asset.target,
+            "requested_target": target_domain,
+            "effective_target": effective_target,
+            "discovery_policy": effective_policy,
+            "authorization_confirmed": True,
+            "validated_at": now_utc.isoformat(),
+            "apex_domain": cls.extract_apex_domain(effective_target) if not candidate_is_ip else None,
+            "allowlist_cidrs": allowlist_cidrs if effective_policy == DiscoveryPolicy.AUTHORIZED_INTERNAL else [],
+        }
+
+        return asset, effective_target, effective_policy, validation_evidence
 
     # Backward compatibility helper for existing callers
     @classmethod
