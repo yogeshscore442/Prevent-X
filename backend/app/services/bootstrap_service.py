@@ -25,6 +25,9 @@ SYSTEM_PERMISSIONS = [
     (PermissionCode.AUDIT_READ, "View Audit Logs", "Allows viewing immutable audit trail logs", "audit"),
     (PermissionCode.SYSTEM_READ, "View System Telemetry", "Allows viewing system health and performance", "system"),
     (PermissionCode.SYSTEM_WRITE, "Manage System Settings", "Allows updating platform-wide settings", "system"),
+    (PermissionCode.DISCOVERY_READ, "View Attack Surface", "Allows viewing attack surface assets and discovery jobs", "attack_surface"),
+    (PermissionCode.DISCOVERY_CREATE, "Initiate Discovery", "Allows initiating external passive discovery scans", "attack_surface"),
+    (PermissionCode.DISCOVERY_CANCEL, "Cancel Discovery", "Allows cancelling running discovery operations", "attack_surface"),
 ]
 
 SYSTEM_ROLES = [

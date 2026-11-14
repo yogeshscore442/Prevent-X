@@ -24,6 +24,27 @@ class AttackSurfaceIntelligenceModule(BaseSecurityModule):
     def target_phase(self) -> int:
         return 2
 
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        if action_name == "calculate_risk":
+            from backend.app.modules.attack_surface.risk_engine import DeterministicRiskEngine
+            engine = DeterministicRiskEngine()
+            return engine.calculate_risk(
+                domain_name=payload.get("domain_name", ""),
+                subdomains=payload.get("subdomains", []),
+                dns_data=payload.get("dns_data", {}),
+                certificates=payload.get("certificates", []),
+                rdap_data=payload.get("rdap_data"),
+            )
+        elif action_name == "normalize_domain":
+            from backend.app.modules.attack_surface.scope_validator import ScopeValidator
+            return {"normalized": ScopeValidator.normalize_target_domain(payload.get("target", ""))}
+        else:
+            raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+
 
 class AdvancedVulnerabilityMappingModule(BaseSecurityModule):
     @property

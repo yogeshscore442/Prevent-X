@@ -273,3 +273,4 @@ All tests were executed against live infrastructure services rather than mocks o
 | **TASK 3** | `worker_health_ping` | Real Redis Broker | Asynchronously returned `'pong'` | **PASS** |
 | **TASK 3** | `purge_expired_sessions` | Real Redis Broker | Asynchronously executed purge in DB | **PASS** |
 | **TASK 5** | Docker Compose Stack | Workstation Host | Docker CLI not found on host | **NOT TESTED** |
+

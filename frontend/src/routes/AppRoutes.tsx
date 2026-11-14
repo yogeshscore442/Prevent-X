@@ -6,6 +6,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { BootstrapPage } from '@/pages/BootstrapPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { AssetsPage } from '@/pages/AssetsPage';
+import { AttackSurfacePage } from '@/pages/AttackSurfacePage';
 import { OrganizationsPage } from '@/pages/OrganizationsPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { RolesPage } from '@/pages/RolesPage';
@@ -78,6 +79,7 @@ export const AppRoutes: React.FC = () => {
       >
         <Route path="/" element={<DashboardPage />} />
         <Route path="/assets" element={<AssetsPage />} />
+        <Route path="/attack-surface" element={<AttackSurfacePage />} />
         <Route path="/organizations" element={<OrganizationsPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/roles" element={<RolesPage />} />

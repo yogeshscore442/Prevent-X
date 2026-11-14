@@ -8,6 +8,7 @@ from backend.app.database.session import SessionLocal
 from backend.app.models.session import UserSession
 from backend.app.workers.celery_app import celery_app
 from backend.app.core.logging import logger
+from backend.app.modules.attack_surface.tasks.discovery_tasks import execute_discovery_job
 
 
 @celery_app.task(name="preventx.tasks.purge_expired_sessions")

@@ -3,6 +3,7 @@ import { Outlet, NavLink } from 'react-router-dom';
 import {
   ShieldAlert,
   Server,
+  Globe,
   Building2,
   Users,
   KeyRound,
@@ -30,6 +31,7 @@ export const AppLayout: React.FC = () => {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Managed Assets', path: '/assets', icon: Server },
+    { name: 'Attack Surface', path: '/attack-surface', icon: Globe },
     { name: 'Organizations', path: '/organizations', icon: Building2 },
     { name: 'Users & Access', path: '/users', icon: Users },
     { name: 'Roles & Permissions', path: '/roles', icon: KeyRound },

@@ -12,6 +12,18 @@ from backend.app.models.session import UserSession
 from backend.app.models.asset import ManagedAsset
 from backend.app.models.audit_log import AuditEvent
 from backend.app.models.setting import SystemSetting
+from backend.app.models.attack_surface import (
+    DiscoveryJob,
+    DiscoveryJobStatus,
+    DiscoveredDomain,
+    DNSRecord,
+    CertificateEvidence,
+    RDAPRecord,
+    ExposureFinding,
+    FindingCategory,
+    FindingSeverity,
+    FindingConfidence,
+)
 from backend.app.models.future_entities import (
     CveRecord,
     VulnerabilityRecord,
@@ -37,6 +49,16 @@ __all__ = [
     "ManagedAsset",
     "AuditEvent",
     "SystemSetting",
+    "DiscoveryJob",
+    "DiscoveryJobStatus",
+    "DiscoveredDomain",
+    "DNSRecord",
+    "CertificateEvidence",
+    "RDAPRecord",
+    "ExposureFinding",
+    "FindingCategory",
+    "FindingSeverity",
+    "FindingConfidence",
     "CveRecord",
     "VulnerabilityRecord",
     "ThreatIntelligenceFeed",

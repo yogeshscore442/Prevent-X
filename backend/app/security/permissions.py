@@ -42,6 +42,9 @@ class PermissionCode:
     AUDIT_READ = "audit:read"
     SYSTEM_READ = "system:read"
     SYSTEM_WRITE = "system:write"
+    DISCOVERY_READ = "discovery:read"
+    DISCOVERY_CREATE = "discovery:create"
+    DISCOVERY_CANCEL = "discovery:cancel"
 
 
 # Default Role-Permission matrix
@@ -58,6 +61,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.AUDIT_READ,
         PermissionCode.SYSTEM_READ,
         PermissionCode.SYSTEM_WRITE,
+        PermissionCode.DISCOVERY_READ,
+        PermissionCode.DISCOVERY_CREATE,
+        PermissionCode.DISCOVERY_CANCEL,
     },
     SystemRole.ORG_ADMIN: {
         PermissionCode.ORG_READ,
@@ -69,6 +75,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.ASSET_DELETE,
         PermissionCode.AUDIT_READ,
         PermissionCode.SYSTEM_READ,
+        PermissionCode.DISCOVERY_READ,
+        PermissionCode.DISCOVERY_CREATE,
+        PermissionCode.DISCOVERY_CANCEL,
     },
     SystemRole.SECURITY_ANALYST: {
         PermissionCode.ORG_READ,
@@ -78,6 +87,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.ASSET_WRITE,
         PermissionCode.AUDIT_READ,
         PermissionCode.SYSTEM_READ,
+        PermissionCode.DISCOVERY_READ,
+        PermissionCode.DISCOVERY_CREATE,
+        PermissionCode.DISCOVERY_CANCEL,
     },
     SystemRole.AUDITOR: {
         PermissionCode.ORG_READ,
@@ -86,12 +98,14 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.ASSET_READ,
         PermissionCode.AUDIT_READ,
         PermissionCode.SYSTEM_READ,
+        PermissionCode.DISCOVERY_READ,
     },
     SystemRole.VIEWER: {
         PermissionCode.ORG_READ,
         PermissionCode.USER_READ,
         PermissionCode.ASSET_READ,
         PermissionCode.SYSTEM_READ,
+        PermissionCode.DISCOVERY_READ,
     },
 }
 

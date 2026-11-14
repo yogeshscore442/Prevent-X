@@ -10,7 +10,10 @@ celery_app = Celery(
     "preventx_workers",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["backend.app.workers.tasks"],
+    include=[
+        "backend.app.workers.tasks",
+        "backend.app.modules.attack_surface.tasks.discovery_tasks",
+    ],
 )
 
 celery_app.conf.update(

@@ -5,6 +5,7 @@ PREVENT-X API v1 Router Assembly
 from fastapi import APIRouter
 from backend.app.api.v1.endpoints import (
     assets,
+    attack_surface,
     audit_logs,
     auth,
     organizations,
@@ -30,6 +31,9 @@ api_router.include_router(roles.router)
 
 # Managed Asset Protection Scope
 api_router.include_router(assets.router)
+
+# Attack Surface Intelligence Engine (MOD-01)
+api_router.include_router(attack_surface.router)
 
 # Audit Log Ingestion and Compliance Trail
 api_router.include_router(audit_logs.router)
