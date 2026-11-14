@@ -1,0 +1,42 @@
+# Environments & Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Node & Frontend
+node_modules/
+dist/
+build/
+coverage/
+.eslintcache
+*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+postgres-data/
+
+# OS and IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment Variables & Secrets
+.env
+.env.production
+*.pem
+*.key
