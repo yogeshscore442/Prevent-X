@@ -200,3 +200,4 @@ class AttackPathAnalysisJob(Base, TimestampMixin):
     recommendations_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+

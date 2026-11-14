@@ -114,3 +114,4 @@ def downgrade() -> None:
     op.drop_column('attack_paths', 'title')
     op.drop_column('attack_paths', 'confidence')
     op.drop_column('attack_paths', 'severity')
+

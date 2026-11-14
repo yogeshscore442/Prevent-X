@@ -13,21 +13,25 @@ from backend.app.database.base import Base, TimestampMixin, utc_now
 from backend.app.database.guid import GUID
 
 
-# Re-export Phase 3 & 4 operational models
+# Re-export Phase 3 & 4 & 5 operational models
 from backend.app.models.vulnerability import CveRecord, VulnerabilityRecord
 from backend.app.models.attack_path import AttackPath, AttackPathGraph
-
-
-class ThreatIntelligenceFeed(Base, TimestampMixin):
-    """External and internal threat signals and IoC indicators."""
-    __tablename__ = "threat_intel_records"
-
-    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
-    indicator_type: Mapped[str] = mapped_column(String(50), nullable=False) # IP, DOMAIN, HASH, URL, PATTERN
-    indicator_value: Mapped[str] = mapped_column(String(500), index=True, nullable=False)
-    confidence: Mapped[int] = mapped_column(Integer, default=50, nullable=False) # 0 - 100
-    source: Mapped[str] = mapped_column(String(100), nullable=False)
-    threat_actor: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+from backend.app.models.zero_trust import (
+    AssetTrustAssessment,
+    ThreatIntelRecord,
+    ThreatIntelligenceFeed,
+    ThreatAssetCorrelation,
+    BehavioralAnomaly,
+    ResponseAction,
+    TrustDecision,
+    IndicatorType,
+    AnomalyType,
+    AnomalySeverity,
+    AnomalyConfidence,
+    AnomalyStatus,
+    ResponseActionType,
+    ResponseActionStatus,
+)
 
 
 

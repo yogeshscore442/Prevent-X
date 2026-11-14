@@ -143,3 +143,4 @@ class PreventionRecommendationEngine:
             rec.pop("_rank_score", None)
 
         return recs
+

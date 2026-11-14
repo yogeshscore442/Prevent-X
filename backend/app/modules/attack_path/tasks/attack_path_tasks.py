@@ -49,3 +49,4 @@ def execute_attack_path_analysis_job(self, job_id_str: str) -> Dict[str, Any]:
         return {"job_id": job_id_str, "status": "FAILED", "error": str(exc)}
     finally:
         db.close()
+

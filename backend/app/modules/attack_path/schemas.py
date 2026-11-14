@@ -166,3 +166,4 @@ class AttackPathOverviewStats(BaseModel):
     total_recommendations: int
     implemented_recommendations: int
     top_mitre_tactics: List[Dict[str, Any]]
+

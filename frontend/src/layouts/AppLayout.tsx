@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import {
   ShieldAlert,
+  ShieldCheck,
   Server,
   Globe,
   Bug,
@@ -36,6 +37,7 @@ export const AppLayout: React.FC = () => {
     { name: 'Attack Surface', path: '/attack-surface', icon: Globe },
     { name: 'Vulnerabilities', path: '/vulnerabilities', icon: Bug },
     { name: 'Attack Paths', path: '/attack-paths', icon: Workflow },
+    { name: 'Zero Trust & Resilience', path: '/zero-trust', icon: ShieldCheck },
     { name: 'Organizations', path: '/organizations', icon: Building2 },
     { name: 'Users & Access', path: '/users', icon: Users },
     { name: 'Roles & Permissions', path: '/roles', icon: KeyRound },

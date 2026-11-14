@@ -145,11 +145,43 @@ class ZeroTrustSecurityModule(BaseSecurityModule):
 
     @property
     def description(self) -> str:
-        return "Enforces micro-segmentation, continuous identity verification, and contextual access gates."
+        return "Enforces micro-segmentation, continuous identity verification, behavioral anomaly detection, and contextual access gates."
 
     @property
     def target_phase(self) -> int:
-        return 4
+        return 5
+
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        from uuid import UUID
+        from backend.app.database.session import SessionLocal
+        from backend.app.modules.zero_trust.service import ZeroTrustService
+
+        org_id_val = payload.get("organization_id")
+        if not org_id_val:
+            raise ValueError("organization_id is required for Zero Trust action.")
+        org_id = UUID(str(org_id_val))
+
+        db = SessionLocal()
+        try:
+            if action_name == "evaluate_posture":
+                asset_id_val = payload.get("asset_id")
+                if asset_id_val:
+                    res = ZeroTrustService.evaluate_asset(db, UUID(str(asset_id_val)), org_id)
+                    return {"status": "SUCCESS", "asset_id": str(res.asset_id), "decision": res.trust_decision, "score": res.trust_score}
+                else:
+                    assessments = ZeroTrustService.evaluate_all_assets(db, org_id)
+                    return {"status": "SUCCESS", "evaluated_count": len(assessments)}
+            elif action_name == "detect_anomalies":
+                anomalies = ZeroTrustService.run_behavioral_evaluation(db, org_id)
+                return {"status": "SUCCESS", "anomalies_detected": len(anomalies)}
+            else:
+                raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+        finally:
+            db.close()
 
 
 class AIThreatIntelligenceModule(BaseSecurityModule):
@@ -163,11 +195,38 @@ class AIThreatIntelligenceModule(BaseSecurityModule):
 
     @property
     def description(self) -> str:
-        return "Correlates emerging threat actor tactics, techniques, and procedures (TTPs) with local SMB exposures."
+        return "Correlates emerging threat actor tactics, techniques, and procedures (TTPs) and indicators with local SMB exposures."
 
     @property
     def target_phase(self) -> int:
         return 5
+
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        from uuid import UUID
+        from backend.app.database.session import SessionLocal
+        from backend.app.modules.zero_trust.service import ZeroTrustService
+
+        org_id_val = payload.get("organization_id")
+        org_id = UUID(str(org_id_val)) if org_id_val else None
+
+        db = SessionLocal()
+        try:
+            if action_name == "sync_intel":
+                count = ZeroTrustService.sync_threat_intel(db, org_id)
+                return {"status": "SUCCESS", "indicators_synced": count}
+            elif action_name == "correlate_threats":
+                if not org_id:
+                    raise ValueError("organization_id is required to correlate threats.")
+                res = ZeroTrustService.run_threat_correlation(db, org_id)
+                return {"status": "SUCCESS", "correlation_summary": res}
+            else:
+                raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+        finally:
+            db.close()
 
 
 class ProactiveSecurityHardeningModule(BaseSecurityModule):

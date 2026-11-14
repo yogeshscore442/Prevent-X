@@ -120,3 +120,4 @@ export const attackPathApi = {
     await api.delete(`/attack-paths/trust-relationships/${relId}`);
   },
 };
+

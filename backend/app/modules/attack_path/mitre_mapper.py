@@ -213,3 +213,4 @@ class MitreAttackMapper:
                 if req not in prereqs:
                     prereqs.append(req)
         return prereqs
+

@@ -54,6 +54,14 @@ class PermissionCode:
     ATTACK_PATH_READ = "attack_path:read"
     ATTACK_PATH_ANALYZE = "attack_path:analyze"
     ATTACK_PATH_WRITE = "attack_path:write"
+    ZERO_TRUST_READ = "zero_trust:read"
+    ZERO_TRUST_EVALUATE = "zero_trust:evaluate"
+    ZERO_TRUST_WRITE = "zero_trust:write"
+    THREAT_INTEL_READ = "threat_intel:read"
+    THREAT_INTEL_SYNC = "threat_intel:sync"
+    RESPONSE_ACTION_READ = "response_action:read"
+    RESPONSE_ACTION_APPROVE = "response_action:approve"
+    RESPONSE_ACTION_EXECUTE = "response_action:execute"
 
 
 # Default Role-Permission matrix
@@ -82,6 +90,14 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.ATTACK_PATH_READ,
         PermissionCode.ATTACK_PATH_ANALYZE,
         PermissionCode.ATTACK_PATH_WRITE,
+        PermissionCode.ZERO_TRUST_READ,
+        PermissionCode.ZERO_TRUST_EVALUATE,
+        PermissionCode.ZERO_TRUST_WRITE,
+        PermissionCode.THREAT_INTEL_READ,
+        PermissionCode.THREAT_INTEL_SYNC,
+        PermissionCode.RESPONSE_ACTION_READ,
+        PermissionCode.RESPONSE_ACTION_APPROVE,
+        PermissionCode.RESPONSE_ACTION_EXECUTE,
     },
     SystemRole.ORG_ADMIN: {
         PermissionCode.ORG_READ,
@@ -105,6 +121,14 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.ATTACK_PATH_READ,
         PermissionCode.ATTACK_PATH_ANALYZE,
         PermissionCode.ATTACK_PATH_WRITE,
+        PermissionCode.ZERO_TRUST_READ,
+        PermissionCode.ZERO_TRUST_EVALUATE,
+        PermissionCode.ZERO_TRUST_WRITE,
+        PermissionCode.THREAT_INTEL_READ,
+        PermissionCode.THREAT_INTEL_SYNC,
+        PermissionCode.RESPONSE_ACTION_READ,
+        PermissionCode.RESPONSE_ACTION_APPROVE,
+        PermissionCode.RESPONSE_ACTION_EXECUTE,
     },
     SystemRole.SECURITY_ANALYST: {
         PermissionCode.ORG_READ,
@@ -124,6 +148,13 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.ATTACK_PATH_READ,
         PermissionCode.ATTACK_PATH_ANALYZE,
         PermissionCode.ATTACK_PATH_WRITE,
+        PermissionCode.ZERO_TRUST_READ,
+        PermissionCode.ZERO_TRUST_EVALUATE,
+        PermissionCode.ZERO_TRUST_WRITE,
+        PermissionCode.THREAT_INTEL_READ,
+        PermissionCode.THREAT_INTEL_SYNC,
+        PermissionCode.RESPONSE_ACTION_READ,
+        PermissionCode.RESPONSE_ACTION_EXECUTE,
     },
     SystemRole.AUDITOR: {
         PermissionCode.ORG_READ,
@@ -135,6 +166,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.DISCOVERY_READ,
         PermissionCode.VULNERABILITY_READ,
         PermissionCode.ATTACK_PATH_READ,
+        PermissionCode.ZERO_TRUST_READ,
+        PermissionCode.THREAT_INTEL_READ,
+        PermissionCode.RESPONSE_ACTION_READ,
     },
     SystemRole.VIEWER: {
         PermissionCode.ORG_READ,
@@ -144,6 +178,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.DISCOVERY_READ,
         PermissionCode.VULNERABILITY_READ,
         PermissionCode.ATTACK_PATH_READ,
+        PermissionCode.ZERO_TRUST_READ,
+        PermissionCode.THREAT_INTEL_READ,
+        PermissionCode.RESPONSE_ACTION_READ,
     },
 }
 

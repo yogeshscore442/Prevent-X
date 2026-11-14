@@ -123,3 +123,4 @@ export interface AttackPathAnalysisJob {
   completed_at?: string;
   created_at: string;
 }
+

@@ -7,3 +7,4 @@ from backend.app.modules.attack_path.tasks.attack_path_tasks import (
 )
 
 __all__ = ["execute_attack_path_analysis_job"]
+

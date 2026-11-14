@@ -56,8 +56,23 @@ from backend.app.models.attack_path import (
     ImpactLevel,
     TrustRelationshipType,
 )
-from backend.app.models.future_entities import (
+from backend.app.models.zero_trust import (
+    AssetTrustAssessment,
+    ThreatIntelRecord,
     ThreatIntelligenceFeed,
+    ThreatAssetCorrelation,
+    BehavioralAnomaly,
+    ResponseAction,
+    TrustDecision,
+    IndicatorType,
+    AnomalyType,
+    AnomalySeverity,
+    AnomalyConfidence,
+    AnomalyStatus,
+    ResponseActionType,
+    ResponseActionStatus,
+)
+from backend.app.models.future_entities import (
     SecurityPolicy,
     VirtualPatchRule,
     ValidationResult,

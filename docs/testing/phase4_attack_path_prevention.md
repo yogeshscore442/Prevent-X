@@ -123,3 +123,4 @@ Located at `frontend/src/pages/AttackPathsPage.tsx` and routed via `/attack-path
 ## 6. Phase 4 Sign-Off Gate
 
 All Phase 4 requirements are complete, verified against PostgreSQL 16 on port 54320, Redis 8, Celery background worker, and the React frontend dashboard. Development strictly stops at Phase 4 in compliance with project instructions.
+

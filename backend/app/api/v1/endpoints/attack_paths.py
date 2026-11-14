@@ -473,3 +473,4 @@ def delete_trust_relationship(
     if not deleted:
         raise HTTPException(status_code=404, detail="Trust relationship not found")
     return None
+

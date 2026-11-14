@@ -37,6 +37,14 @@ SYSTEM_PERMISSIONS = [
     (PermissionCode.ATTACK_PATH_READ, "View Attack Paths", "Allows viewing analyzed attack paths and MITRE ATT&CK mappings", "attack_paths"),
     (PermissionCode.ATTACK_PATH_ANALYZE, "Analyze Attack Paths", "Allows initiating graph-based attack path and prerequisite analysis", "attack_paths"),
     (PermissionCode.ATTACK_PATH_WRITE, "Manage Preventive Controls", "Allows updating preventive recommendation status and trust links", "attack_paths"),
+    (PermissionCode.ZERO_TRUST_READ, "View Zero Trust Posture", "Allows viewing asset trust decisions and continuous evaluation metrics", "zero_trust"),
+    (PermissionCode.ZERO_TRUST_EVALUATE, "Evaluate Asset Trust", "Allows triggering continuous trust posture assessments", "zero_trust"),
+    (PermissionCode.ZERO_TRUST_WRITE, "Manage Zero Trust Policies", "Allows modifying trust thresholds and micro-segmentation policies", "zero_trust"),
+    (PermissionCode.THREAT_INTEL_READ, "View Threat Intelligence", "Allows viewing threat indicators, IOCs, and asset correlations", "threat_intel"),
+    (PermissionCode.THREAT_INTEL_SYNC, "Sync Threat Intelligence", "Allows ingesting external threat feeds and updating indicator database", "threat_intel"),
+    (PermissionCode.RESPONSE_ACTION_READ, "View Response Actions", "Allows viewing automated response recommendations and execution status", "response_actions"),
+    (PermissionCode.RESPONSE_ACTION_APPROVE, "Approve Response Actions", "Allows approving or rejecting disruptive containment and segmentation actions", "response_actions"),
+    (PermissionCode.RESPONSE_ACTION_EXECUTE, "Execute Response Actions", "Allows triggering automated or approved containment actions", "response_actions"),
 ]
 
 SYSTEM_ROLES = [

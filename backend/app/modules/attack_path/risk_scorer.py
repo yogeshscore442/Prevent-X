@@ -119,3 +119,4 @@ class AttackPathRiskScorer:
                 "confidence_multiplier": conf_multiplier,
             },
         }
+

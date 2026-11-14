@@ -9,6 +9,7 @@ import { AssetsPage } from '@/pages/AssetsPage';
 import { AttackSurfacePage } from '@/pages/AttackSurfacePage';
 import { VulnerabilitiesPage } from '@/pages/VulnerabilitiesPage';
 import { AttackPathsPage } from '@/pages/AttackPathsPage';
+import { ZeroTrustPage } from '@/pages/ZeroTrustPage';
 import { OrganizationsPage } from '@/pages/OrganizationsPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { RolesPage } from '@/pages/RolesPage';
@@ -84,6 +85,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/attack-surface" element={<AttackSurfacePage />} />
         <Route path="/vulnerabilities" element={<VulnerabilitiesPage />} />
         <Route path="/attack-paths" element={<AttackPathsPage />} />
+        <Route path="/zero-trust" element={<ZeroTrustPage />} />
         <Route path="/organizations" element={<OrganizationsPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/roles" element={<RolesPage />} />
