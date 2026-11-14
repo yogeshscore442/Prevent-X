@@ -51,6 +51,9 @@ class PermissionCode:
     VULNERABILITY_WRITE = "vulnerability:write"
     VULNERABILITY_SCAN = "vulnerability:scan"
     VULNERABILITY_FEED_SYNC = "vulnerability:feed_sync"
+    ATTACK_PATH_READ = "attack_path:read"
+    ATTACK_PATH_ANALYZE = "attack_path:analyze"
+    ATTACK_PATH_WRITE = "attack_path:write"
 
 
 # Default Role-Permission matrix
@@ -76,6 +79,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.VULNERABILITY_WRITE,
         PermissionCode.VULNERABILITY_SCAN,
         PermissionCode.VULNERABILITY_FEED_SYNC,
+        PermissionCode.ATTACK_PATH_READ,
+        PermissionCode.ATTACK_PATH_ANALYZE,
+        PermissionCode.ATTACK_PATH_WRITE,
     },
     SystemRole.ORG_ADMIN: {
         PermissionCode.ORG_READ,
@@ -96,6 +102,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.VULNERABILITY_WRITE,
         PermissionCode.VULNERABILITY_SCAN,
         PermissionCode.VULNERABILITY_FEED_SYNC,
+        PermissionCode.ATTACK_PATH_READ,
+        PermissionCode.ATTACK_PATH_ANALYZE,
+        PermissionCode.ATTACK_PATH_WRITE,
     },
     SystemRole.SECURITY_ANALYST: {
         PermissionCode.ORG_READ,
@@ -112,6 +121,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.VULNERABILITY_READ,
         PermissionCode.VULNERABILITY_WRITE,
         PermissionCode.VULNERABILITY_SCAN,
+        PermissionCode.ATTACK_PATH_READ,
+        PermissionCode.ATTACK_PATH_ANALYZE,
+        PermissionCode.ATTACK_PATH_WRITE,
     },
     SystemRole.AUDITOR: {
         PermissionCode.ORG_READ,
@@ -122,6 +134,7 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.SYSTEM_READ,
         PermissionCode.DISCOVERY_READ,
         PermissionCode.VULNERABILITY_READ,
+        PermissionCode.ATTACK_PATH_READ,
     },
     SystemRole.VIEWER: {
         PermissionCode.ORG_READ,
@@ -130,6 +143,7 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.SYSTEM_READ,
         PermissionCode.DISCOVERY_READ,
         PermissionCode.VULNERABILITY_READ,
+        PermissionCode.ATTACK_PATH_READ,
     },
 }
 

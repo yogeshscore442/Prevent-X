@@ -34,6 +34,9 @@ SYSTEM_PERMISSIONS = [
     (PermissionCode.VULNERABILITY_WRITE, "Manage Vulnerabilities", "Allows modifying vulnerability status and triage state", "vulnerabilities"),
     (PermissionCode.VULNERABILITY_SCAN, "Execute Vulnerability Scan", "Allows initiating vulnerability mapping scans against assets", "vulnerabilities"),
     (PermissionCode.VULNERABILITY_FEED_SYNC, "Sync Threat Feeds", "Allows updating CVE, CISA KEV, and EPSS threat intelligence feeds", "vulnerabilities"),
+    (PermissionCode.ATTACK_PATH_READ, "View Attack Paths", "Allows viewing analyzed attack paths and MITRE ATT&CK mappings", "attack_paths"),
+    (PermissionCode.ATTACK_PATH_ANALYZE, "Analyze Attack Paths", "Allows initiating graph-based attack path and prerequisite analysis", "attack_paths"),
+    (PermissionCode.ATTACK_PATH_WRITE, "Manage Preventive Controls", "Allows updating preventive recommendation status and trust links", "attack_paths"),
 ]
 
 SYSTEM_ROLES = [

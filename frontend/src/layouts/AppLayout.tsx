@@ -15,6 +15,7 @@ import {
   ChevronDown,
   LayoutDashboard,
   Layers,
+  Workflow,
   Menu,
   X,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ export const AppLayout: React.FC = () => {
     { name: 'Managed Assets', path: '/assets', icon: Server },
     { name: 'Attack Surface', path: '/attack-surface', icon: Globe },
     { name: 'Vulnerabilities', path: '/vulnerabilities', icon: Bug },
+    { name: 'Attack Paths', path: '/attack-paths', icon: Workflow },
     { name: 'Organizations', path: '/organizations', icon: Building2 },
     { name: 'Users & Access', path: '/users', icon: Users },
     { name: 'Roles & Permissions', path: '/roles', icon: KeyRound },

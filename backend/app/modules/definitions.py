@@ -100,6 +100,39 @@ class AttackPathPrerequisiteAnalysisModule(BaseSecurityModule):
     def target_phase(self) -> int:
         return 4
 
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        if action_name == "analyze_paths":
+            from uuid import UUID
+            from backend.app.database.session import SessionLocal
+            from backend.app.modules.attack_path.service import AttackPathService
+
+            org_id_val = payload.get("organization_id")
+            if not org_id_val:
+                raise ValueError("organization_id is required for attack path analysis.")
+            org_id = UUID(str(org_id_val))
+            db = SessionLocal()
+            try:
+                return AttackPathService.run_analysis_sync(db, org_id)
+            finally:
+                db.close()
+        elif action_name == "calculate_risk":
+            from backend.app.modules.attack_path.risk_scorer import AttackPathRiskScorer
+            return AttackPathRiskScorer.calculate_risk(
+                is_internet_facing=payload.get("is_internet_facing", False),
+                has_cisa_kev=payload.get("has_cisa_kev", False),
+                max_cvss=payload.get("max_cvss"),
+                has_vulnerabilities=payload.get("has_vulnerabilities", False),
+                target_criticality=payload.get("target_criticality", "MEDIUM"),
+                step_count=payload.get("step_count", 1),
+                confidence=payload.get("confidence", "POTENTIAL"),
+            )
+        else:
+            raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+
 
 class ZeroTrustSecurityModule(BaseSecurityModule):
     @property

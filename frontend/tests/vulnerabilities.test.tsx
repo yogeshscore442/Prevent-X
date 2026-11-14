@@ -274,3 +274,4 @@ describe('VulnerabilitiesPage Component (Phase 3)', () => {
     });
   });
 });
+

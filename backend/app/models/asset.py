@@ -7,12 +7,30 @@ import uuid
 from typing import Optional, TYPE_CHECKING
 from sqlalchemy import String, Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+import enum
 from backend.app.database.base import Base, TimestampMixin
 from backend.app.database.guid import GUID
 
 if TYPE_CHECKING:
     from backend.app.models.organization import Organization
     from backend.app.models.user import User
+
+
+class AssetType(str, enum.Enum):
+    WEB_APPLICATION = "WEB_APPLICATION"
+    API_GATEWAY = "API_GATEWAY"
+    PUBLIC_IP = "PUBLIC_IP"
+    INTERNAL_SERVER = "INTERNAL_SERVER"
+    DOMAIN = "DOMAIN"
+    IP_ADDRESS = "IP_ADDRESS"
+    CLOUD_RESOURCE = "CLOUD_RESOURCE"
+
+
+class AssetCriticality(str, enum.Enum):
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
 
 
 class ManagedAsset(Base, TimestampMixin):

@@ -13,8 +13,9 @@ from backend.app.database.base import Base, TimestampMixin, utc_now
 from backend.app.database.guid import GUID
 
 
-# Re-export Phase 3 operational models
+# Re-export Phase 3 & 4 operational models
 from backend.app.models.vulnerability import CveRecord, VulnerabilityRecord
+from backend.app.models.attack_path import AttackPath, AttackPathGraph
 
 
 class ThreatIntelligenceFeed(Base, TimestampMixin):
@@ -29,17 +30,6 @@ class ThreatIntelligenceFeed(Base, TimestampMixin):
     threat_actor: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
 
-class AttackPathGraph(Base, TimestampMixin):
-    """Attack prerequisite tree and kill-chain exposure pathways."""
-    __tablename__ = "attack_paths"
-
-    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    entry_point_asset_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("managed_assets.id", ondelete="CASCADE"), nullable=False)
-    target_asset_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("managed_assets.id", ondelete="CASCADE"), nullable=False)
-    step_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    risk_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
 
 class SecurityPolicy(Base, TimestampMixin):
