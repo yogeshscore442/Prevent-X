@@ -178,3 +178,4 @@ class ZeroTrustOverviewStats(BaseModel):
     zero_day_indicators_count: int
     pending_approval_actions: int
     executed_actions: int
+

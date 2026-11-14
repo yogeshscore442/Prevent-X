@@ -62,6 +62,11 @@ class PermissionCode:
     RESPONSE_ACTION_READ = "response_action:read"
     RESPONSE_ACTION_APPROVE = "response_action:approve"
     RESPONSE_ACTION_EXECUTE = "response_action:execute"
+    VIRTUAL_PATCH_READ = "virtual_patch:read"
+    VIRTUAL_PATCH_WRITE = "virtual_patch:write"
+    VIRTUAL_PATCH_APPROVE = "virtual_patch:approve"
+    VIRTUAL_PATCH_DEPLOY = "virtual_patch:deploy"
+    WAF_LOGS_READ = "waf_logs:read"
 
 
 # Default Role-Permission matrix
@@ -98,6 +103,11 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.RESPONSE_ACTION_READ,
         PermissionCode.RESPONSE_ACTION_APPROVE,
         PermissionCode.RESPONSE_ACTION_EXECUTE,
+        PermissionCode.VIRTUAL_PATCH_READ,
+        PermissionCode.VIRTUAL_PATCH_WRITE,
+        PermissionCode.VIRTUAL_PATCH_APPROVE,
+        PermissionCode.VIRTUAL_PATCH_DEPLOY,
+        PermissionCode.WAF_LOGS_READ,
     },
     SystemRole.ORG_ADMIN: {
         PermissionCode.ORG_READ,
@@ -129,6 +139,11 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.RESPONSE_ACTION_READ,
         PermissionCode.RESPONSE_ACTION_APPROVE,
         PermissionCode.RESPONSE_ACTION_EXECUTE,
+        PermissionCode.VIRTUAL_PATCH_READ,
+        PermissionCode.VIRTUAL_PATCH_WRITE,
+        PermissionCode.VIRTUAL_PATCH_APPROVE,
+        PermissionCode.VIRTUAL_PATCH_DEPLOY,
+        PermissionCode.WAF_LOGS_READ,
     },
     SystemRole.SECURITY_ANALYST: {
         PermissionCode.ORG_READ,
@@ -155,6 +170,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.THREAT_INTEL_SYNC,
         PermissionCode.RESPONSE_ACTION_READ,
         PermissionCode.RESPONSE_ACTION_EXECUTE,
+        PermissionCode.VIRTUAL_PATCH_READ,
+        PermissionCode.VIRTUAL_PATCH_WRITE,
+        PermissionCode.WAF_LOGS_READ,
     },
     SystemRole.AUDITOR: {
         PermissionCode.ORG_READ,
@@ -169,6 +187,8 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.ZERO_TRUST_READ,
         PermissionCode.THREAT_INTEL_READ,
         PermissionCode.RESPONSE_ACTION_READ,
+        PermissionCode.VIRTUAL_PATCH_READ,
+        PermissionCode.WAF_LOGS_READ,
     },
     SystemRole.VIEWER: {
         PermissionCode.ORG_READ,
@@ -181,6 +201,8 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.ZERO_TRUST_READ,
         PermissionCode.THREAT_INTEL_READ,
         PermissionCode.RESPONSE_ACTION_READ,
+        PermissionCode.VIRTUAL_PATCH_READ,
+        PermissionCode.WAF_LOGS_READ,
     },
 }
 

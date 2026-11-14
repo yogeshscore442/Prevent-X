@@ -447,3 +447,4 @@ class ThreatIntelligenceEngine:
         db.add(new_corr)
         db.flush()
         return True
+

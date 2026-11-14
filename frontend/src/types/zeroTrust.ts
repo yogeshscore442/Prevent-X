@@ -125,3 +125,4 @@ export interface ZeroTrustOverviewStats {
   pending_approval_actions: number;
   executed_actions: number;
 }
+

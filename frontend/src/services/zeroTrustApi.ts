@@ -111,3 +111,4 @@ export const zeroTrustApi = {
     return res.data;
   },
 };
+

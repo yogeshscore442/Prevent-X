@@ -38,6 +38,7 @@ export const AppLayout: React.FC = () => {
     { name: 'Vulnerabilities', path: '/vulnerabilities', icon: Bug },
     { name: 'Attack Paths', path: '/attack-paths', icon: Workflow },
     { name: 'Zero Trust & Resilience', path: '/zero-trust', icon: ShieldCheck },
+    { name: 'Virtual Patching', path: '/virtual-patching', icon: ShieldAlert },
     { name: 'Organizations', path: '/organizations', icon: Building2 },
     { name: 'Users & Access', path: '/users', icon: Users },
     { name: 'Roles & Permissions', path: '/roles', icon: KeyRound },

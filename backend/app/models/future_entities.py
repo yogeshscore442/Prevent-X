@@ -13,7 +13,7 @@ from backend.app.database.base import Base, TimestampMixin, utc_now
 from backend.app.database.guid import GUID
 
 
-# Re-export Phase 3 & 4 & 5 operational models
+# Re-export Phase 3 & 4 & 5 & 6 operational models
 from backend.app.models.vulnerability import CveRecord, VulnerabilityRecord
 from backend.app.models.attack_path import AttackPath, AttackPathGraph
 from backend.app.models.zero_trust import (
@@ -32,6 +32,18 @@ from backend.app.models.zero_trust import (
     ResponseActionType,
     ResponseActionStatus,
 )
+from backend.app.models.virtual_patch import (
+    VirtualPatchRule,
+    VirtualPatchVersion,
+    VirtualPatchDeployment,
+    WafEnforcementLog,
+    VirtualPatchRecommendation,
+    AttackType,
+    PatchAction,
+    PatchStatus,
+    DeploymentEnvironment,
+    DeploymentStatus,
+)
 
 
 
@@ -46,21 +58,6 @@ class SecurityPolicy(Base, TimestampMixin):
     policy_type: Mapped[str] = mapped_column(String(50), nullable=False) # WAF_RULE, RATE_LIMIT, ACCESS_CONTROL, IP_REPUTATION
     enforcement_mode: Mapped[str] = mapped_column(String(50), default="BLOCKING", nullable=False) # MONITORING, BLOCKING, DISABLED
     definition: Mapped[str] = mapped_column(Text, nullable=False) # JSON or ModSecurity rule syntax
-
-
-class VirtualPatchRule(Base, TimestampMixin):
-    """Synthesized compensating virtual patch specifications (ModSecurity, Envoy, Nginx, eBPF)."""
-    __tablename__ = "virtual_patch_rules"
-
-    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=False)
-    asset_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("managed_assets.id", ondelete="CASCADE"), index=True, nullable=False)
-    cve_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    rule_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    target_engine: Mapped[str] = mapped_column(String(50), nullable=False) # MODSECURITY, ENVOY, NGINX, CLOUDFLARE
-    rule_content: Mapped[str] = mapped_column(Text, nullable=False)
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    state: Mapped[str] = mapped_column(String(50), default="DRAFT", nullable=False) # DRAFT, VALIDATED, ACTIVE, ROLLED_BACK
 
 
 class ValidationResult(Base, TimestampMixin):

@@ -149,3 +149,4 @@ def downgrade() -> None:
     op.drop_column('threat_intel_records', 'severity')
     op.drop_column('threat_intel_records', 'description')
     op.drop_column('threat_intel_records', 'organization_id')
+

@@ -244,7 +244,31 @@ class ProactiveSecurityHardeningModule(BaseSecurityModule):
 
     @property
     def target_phase(self) -> int:
-        return 5
+        return 6
+
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        from uuid import UUID
+        from backend.app.database.session import SessionLocal
+        from backend.app.modules.virtual_patch.service import VirtualPatchService
+
+        org_id_val = payload.get("organization_id")
+        if not org_id_val:
+            raise ValueError("organization_id is required.")
+        org_id = UUID(str(org_id_val))
+
+        db = SessionLocal()
+        try:
+            if action_name == "seed_baseline_rules":
+                rules = VirtualPatchService.seed_baseline_rules(db, org_id)
+                return {"status": "SUCCESS", "rules_created": len(rules)}
+            else:
+                raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+        finally:
+            db.close()
 
 
 class ZeroDayUnknownThreatProtectionModule(BaseSecurityModule):
@@ -281,6 +305,41 @@ class IntelligentVirtualPatchingModule(BaseSecurityModule):
     @property
     def target_phase(self) -> int:
         return 6
+
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        from uuid import UUID
+        from backend.app.database.session import SessionLocal
+        from backend.app.modules.virtual_patch.service import VirtualPatchService
+
+        org_id_val = payload.get("organization_id")
+        if not org_id_val:
+            raise ValueError("organization_id is required.")
+        org_id = UUID(str(org_id_val))
+
+        db = SessionLocal()
+        try:
+            if action_name == "generate_recommendations":
+                recs = VirtualPatchService.generate_recommendations_for_organization(db, org_id)
+                return {"status": "SUCCESS", "recommendations_count": len(recs)}
+            elif action_name == "stage_deployment":
+                dep = VirtualPatchService.stage_deployment(
+                    db,
+                    organization_id=org_id,
+                    listen_port=payload.get("listen_port", 8085),
+                    upstream_url=payload.get("upstream_url", "http://127.0.0.1:8086"),
+                )
+                return {"status": "SUCCESS", "deployment_id": str(dep.id), "deployment_status": dep.status}
+            elif action_name == "get_stats":
+                stats = VirtualPatchService.get_overview_stats(db, org_id)
+                return {"status": "SUCCESS", "stats": stats}
+            else:
+                raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+        finally:
+            db.close()
 
 
 class RealTimeTrafficMonitoringModule(BaseSecurityModule):

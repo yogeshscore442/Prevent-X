@@ -86,3 +86,4 @@ def sync_threat_intel_job(
         raise
     finally:
         db.close()
+

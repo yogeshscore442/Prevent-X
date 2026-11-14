@@ -250,3 +250,4 @@ class ResponseAction(Base, TimestampMixin):
     anomaly: Mapped[Optional["BehavioralAnomaly"]] = relationship("BehavioralAnomaly", back_populates="response_actions")
     approved_by_user: Mapped[Optional["User"]] = relationship("User")
     organization: Mapped["Organization"] = relationship("Organization")
+

@@ -198,7 +198,7 @@ describe('ZeroTrustPage Component (Phase 5)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(zeroTrustApi.getOverview).mockResolvedValue(mockOverview);
-    vi.mocked(zeroTrustApi.listAssessments).mockResolvedValue(mockAssessments);
+    vi.mocked(zeroTrustApi.listAssessments).mockResolvedValue(mockAssessments as any);
     vi.mocked(zeroTrustApi.listThreatIndicators).mockResolvedValue(mockThreatIndicators);
     vi.mocked(zeroTrustApi.listThreatCorrelations).mockResolvedValue(mockCorrelations);
     vi.mocked(zeroTrustApi.listAnomalies).mockResolvedValue(mockAnomalies);

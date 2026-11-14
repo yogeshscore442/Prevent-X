@@ -15,6 +15,7 @@ from backend.app.api.v1.endpoints import (
     vulnerabilities,
     attack_paths,
     zero_trust,
+    virtual_patching,
 )
 
 api_router = APIRouter()
@@ -49,5 +50,8 @@ api_router.include_router(audit_logs.router)
 
 # Zero Trust & Threat Intelligence Engine (MOD-04, MOD-05)
 api_router.include_router(zero_trust.router)
+
+# Intelligent Virtual Patching & Reverse Proxy Engine (MOD-06, MOD-08)
+api_router.include_router(virtual_patching.router)
 
 

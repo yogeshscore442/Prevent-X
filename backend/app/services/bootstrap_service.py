@@ -45,6 +45,11 @@ SYSTEM_PERMISSIONS = [
     (PermissionCode.RESPONSE_ACTION_READ, "View Response Actions", "Allows viewing automated response recommendations and execution status", "response_actions"),
     (PermissionCode.RESPONSE_ACTION_APPROVE, "Approve Response Actions", "Allows approving or rejecting disruptive containment and segmentation actions", "response_actions"),
     (PermissionCode.RESPONSE_ACTION_EXECUTE, "Execute Response Actions", "Allows triggering automated or approved containment actions", "response_actions"),
+    (PermissionCode.VIRTUAL_PATCH_READ, "View Virtual Patches", "Allows viewing virtual patch rules, recommendations, and status", "virtual_patch"),
+    (PermissionCode.VIRTUAL_PATCH_WRITE, "Manage Virtual Patches", "Allows creating and modifying virtual patch rules and drafts", "virtual_patch"),
+    (PermissionCode.VIRTUAL_PATCH_APPROVE, "Approve Virtual Patches", "Allows approving virtual patch rules for production deployment", "virtual_patch"),
+    (PermissionCode.VIRTUAL_PATCH_DEPLOY, "Deploy Virtual Patches", "Allows deploying virtual patches to staging and production reverse proxies", "virtual_patch"),
+    (PermissionCode.WAF_LOGS_READ, "View WAF Enforcement Logs", "Allows inspecting real-time WAF request blocks, decisions, and evidence", "virtual_patch"),
 ]
 
 SYSTEM_ROLES = [

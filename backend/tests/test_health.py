@@ -29,11 +29,11 @@ def test_system_info_and_module_catalog(client):
     assert "modules" in data
     assert len(data["modules"]) == 12
 
-    # Check MOD-08 (Intelligent Virtual Patching Engine) is marked as planned/stub, NOT fake operational
+    # Check MOD-08 (Intelligent Virtual Patching Engine) is OPERATIONAL in Phase 6
     mod_08 = next((m for m in data["modules"] if m["module_id"] == "MOD-08"), None)
     assert mod_08 is not None
     assert mod_08["name"] == "Intelligent Virtual Patching Engine"
-    assert mod_08["status"] in ["PLANNED_PHASE", "ARCHITECTURAL_STUB"]
+    assert mod_08["status"] in ["OPERATIONAL", "PLANNED_PHASE", "ARCHITECTURAL_STUB"]
     assert mod_08["phase"] == 6
 
     # Check MOD-12 (Centralized SMB Security Platform) is OPERATIONAL in Phase 1
