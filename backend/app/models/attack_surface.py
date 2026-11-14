@@ -420,4 +420,16 @@ class DiscoveredService(Base, TimestampMixin):
     asset: Mapped["ManagedAsset"] = relationship("ManagedAsset")
     organization: Mapped["Organization"] = relationship("Organization")
 
+    @property
+    def http_server(self) -> Optional[str]:
+        """Convenience property extracting Server header from http_metadata."""
+        if self.http_metadata:
+            try:
+                import json
+                meta = json.loads(self.http_metadata) if isinstance(self.http_metadata, str) else self.http_metadata
+                return meta.get("server")
+            except Exception:
+                return self.http_metadata
+        return None
+
 

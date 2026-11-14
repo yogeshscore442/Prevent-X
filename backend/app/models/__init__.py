@@ -33,9 +33,16 @@ from backend.app.models.attack_surface import (
     ActiveScanJob,
     DiscoveredService,
 )
-from backend.app.models.future_entities import (
+from backend.app.models.vulnerability import (
     CveRecord,
     VulnerabilityRecord,
+    VulnerabilityScanJob,
+    VulnerabilitySeverity,
+    VulnerabilityConfidence,
+    VulnerabilityStatus,
+    VulnerabilityScanStatus,
+)
+from backend.app.models.future_entities import (
     ThreatIntelligenceFeed,
     AttackPathGraph,
     SecurityPolicy,
@@ -79,6 +86,11 @@ __all__ = [
     "DiscoveredService",
     "CveRecord",
     "VulnerabilityRecord",
+    "VulnerabilityScanJob",
+    "VulnerabilitySeverity",
+    "VulnerabilityConfidence",
+    "VulnerabilityStatus",
+    "VulnerabilityScanStatus",
     "ThreatIntelligenceFeed",
     "AttackPathGraph",
     "SecurityPolicy",

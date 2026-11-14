@@ -174,3 +174,4 @@ backend/tests/test_active_discovery.py::test_concurrency_and_timeout_controls PA
   - Result: **17 / 17 PASSED (100%)**
 - **Vite Build**: `npm --prefix frontend run build`
   - Result: **Success in 3.07s** (0 TypeScript errors, 0 lint failures).
+

@@ -47,6 +47,10 @@ class PermissionCode:
     DISCOVERY_CANCEL = "discovery:cancel"
     DISCOVERY_INTERNAL = "discovery:internal"
     DISCOVERY_ACTIVE = "discovery:active"
+    VULNERABILITY_READ = "vulnerability:read"
+    VULNERABILITY_WRITE = "vulnerability:write"
+    VULNERABILITY_SCAN = "vulnerability:scan"
+    VULNERABILITY_FEED_SYNC = "vulnerability:feed_sync"
 
 
 # Default Role-Permission matrix
@@ -68,6 +72,10 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.DISCOVERY_CANCEL,
         PermissionCode.DISCOVERY_INTERNAL,
         PermissionCode.DISCOVERY_ACTIVE,
+        PermissionCode.VULNERABILITY_READ,
+        PermissionCode.VULNERABILITY_WRITE,
+        PermissionCode.VULNERABILITY_SCAN,
+        PermissionCode.VULNERABILITY_FEED_SYNC,
     },
     SystemRole.ORG_ADMIN: {
         PermissionCode.ORG_READ,
@@ -84,6 +92,10 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.DISCOVERY_CANCEL,
         PermissionCode.DISCOVERY_INTERNAL,
         PermissionCode.DISCOVERY_ACTIVE,
+        PermissionCode.VULNERABILITY_READ,
+        PermissionCode.VULNERABILITY_WRITE,
+        PermissionCode.VULNERABILITY_SCAN,
+        PermissionCode.VULNERABILITY_FEED_SYNC,
     },
     SystemRole.SECURITY_ANALYST: {
         PermissionCode.ORG_READ,
@@ -97,6 +109,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.DISCOVERY_CREATE,
         PermissionCode.DISCOVERY_CANCEL,
         PermissionCode.DISCOVERY_ACTIVE,
+        PermissionCode.VULNERABILITY_READ,
+        PermissionCode.VULNERABILITY_WRITE,
+        PermissionCode.VULNERABILITY_SCAN,
     },
     SystemRole.AUDITOR: {
         PermissionCode.ORG_READ,
@@ -106,6 +121,7 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.AUDIT_READ,
         PermissionCode.SYSTEM_READ,
         PermissionCode.DISCOVERY_READ,
+        PermissionCode.VULNERABILITY_READ,
     },
     SystemRole.VIEWER: {
         PermissionCode.ORG_READ,
@@ -113,6 +129,7 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.ASSET_READ,
         PermissionCode.SYSTEM_READ,
         PermissionCode.DISCOVERY_READ,
+        PermissionCode.VULNERABILITY_READ,
     },
 }
 

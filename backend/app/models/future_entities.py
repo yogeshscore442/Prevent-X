@@ -13,32 +13,8 @@ from backend.app.database.base import Base, TimestampMixin, utc_now
 from backend.app.database.guid import GUID
 
 
-class CveRecord(Base, TimestampMixin):
-    """CVE Database and National Vulnerability Database catalog representation."""
-    __tablename__ = "cve_records"
-
-    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
-    cve_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False) # e.g. "CVE-2024-21413"
-    description: Mapped[str] = mapped_column(Text, nullable=False)
-    cvss_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    cvss_vector: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    severity: Mapped[str] = mapped_column(String(20), default="UNKNOWN", nullable=False) # LOW, MEDIUM, HIGH, CRITICAL
-    cwe_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    published_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-
-
-class VulnerabilityRecord(Base, TimestampMixin):
-    """Discovered or ingested vulnerability mapped to a tenant asset."""
-    __tablename__ = "vulnerability_records"
-
-    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=False)
-    asset_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("managed_assets.id", ondelete="CASCADE"), index=True, nullable=False)
-    cve_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Text] = mapped_column(Text, nullable=False)
-    severity: Mapped[str] = mapped_column(String(20), default="MEDIUM", nullable=False)
-    status: Mapped[str] = mapped_column(String(50), default="DETECTED", nullable=False) # DETECTED, MITIGATED, PATCHED, ACCEPTED
+# Re-export Phase 3 operational models
+from backend.app.models.vulnerability import CveRecord, VulnerabilityRecord
 
 
 class ThreatIntelligenceFeed(Base, TimestampMixin):

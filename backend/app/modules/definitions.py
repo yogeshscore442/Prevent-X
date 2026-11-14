@@ -63,6 +63,25 @@ class AdvancedVulnerabilityMappingModule(BaseSecurityModule):
     def target_phase(self) -> int:
         return 3
 
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        if action_name == "sync_feeds":
+            from backend.app.database.session import SessionLocal
+            from backend.app.modules.vulnerability.feed_ingestion import VulnerabilityFeedIngester
+            db = SessionLocal()
+            try:
+                return VulnerabilityFeedIngester.sync_all_feeds(db, fetch_remote=payload.get("fetch_remote", False))
+            finally:
+                db.close()
+        elif action_name == "calculate_risk":
+            from backend.app.modules.vulnerability.risk_engine import VulnerabilityRiskEngine
+            return {"status": "READY"}
+        else:
+            raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+
 
 class AttackPathPrerequisiteAnalysisModule(BaseSecurityModule):
     @property

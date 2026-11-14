@@ -14,6 +14,7 @@ celery_app = Celery(
         "backend.app.workers.tasks",
         "backend.app.modules.attack_surface.tasks.discovery_tasks",
         "backend.app.modules.attack_surface.tasks.active_scan_tasks",
+        "backend.app.modules.vulnerability.tasks.vulnerability_tasks",
     ],
 )
 

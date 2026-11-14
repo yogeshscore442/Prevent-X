@@ -12,6 +12,7 @@ from backend.app.api.v1.endpoints import (
     roles,
     system,
     users,
+    vulnerabilities,
 )
 
 api_router = APIRouter()
@@ -34,6 +35,9 @@ api_router.include_router(assets.router)
 
 # Attack Surface Intelligence Engine (MOD-01)
 api_router.include_router(attack_surface.router)
+
+# Advanced Vulnerability Mapping Engine (MOD-02)
+api_router.include_router(vulnerabilities.router)
 
 # Audit Log Ingestion and Compliance Trail
 api_router.include_router(audit_logs.router)

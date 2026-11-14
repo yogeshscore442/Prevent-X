@@ -138,3 +138,4 @@ All authorization controls are validated by automated tests in `backend/tests/te
 | `test_cross_tenant_active_scan_isolated` | Multi-tenant asset boundary | Tenant B cannot scan Tenant A's asset (HTTP 404) | **PASSED** |
 | `test_worker_revalidation_rejects_altered_job` | Celery worker JIT revalidation | Worker detects out-of-scope asset and aborts without scanning | **PASSED** |
 | `test_cancel_active_scan` | Cooperative scan cancellation | Status updates to CANCELLED and worker stops gracefully | **PASSED** |
+

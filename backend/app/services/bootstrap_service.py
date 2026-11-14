@@ -30,6 +30,10 @@ SYSTEM_PERMISSIONS = [
     (PermissionCode.DISCOVERY_CANCEL, "Cancel Discovery", "Allows cancelling running discovery operations", "attack_surface"),
     (PermissionCode.DISCOVERY_INTERNAL, "Authorized Internal Discovery", "Allows initiating internal scoped discovery on authorized internal assets", "attack_surface"),
     (PermissionCode.DISCOVERY_ACTIVE, "Initiate Active Discovery", "Allows initiating controlled active TCP port and service discovery scans", "attack_surface"),
+    (PermissionCode.VULNERABILITY_READ, "View Vulnerabilities", "Allows viewing detected vulnerabilities and risk scores", "vulnerabilities"),
+    (PermissionCode.VULNERABILITY_WRITE, "Manage Vulnerabilities", "Allows modifying vulnerability status and triage state", "vulnerabilities"),
+    (PermissionCode.VULNERABILITY_SCAN, "Execute Vulnerability Scan", "Allows initiating vulnerability mapping scans against assets", "vulnerabilities"),
+    (PermissionCode.VULNERABILITY_FEED_SYNC, "Sync Threat Feeds", "Allows updating CVE, CISA KEV, and EPSS threat intelligence feeds", "vulnerabilities"),
 ]
 
 SYSTEM_ROLES = [
