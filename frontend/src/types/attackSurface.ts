@@ -138,3 +138,63 @@ export interface DiscoveryJobCreatePayload {
   discovery_policy?: 'PUBLIC_PASSIVE' | 'AUTHORIZED_INTERNAL';
 }
 
+export type ScanProfile = 'BASIC' | 'STANDARD' | 'CUSTOM';
+export type ActiveScanStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
+export type ServiceState = 'OPEN' | 'CLOSED' | 'FILTERED';
+export type ServiceConfidence = 'CONFIRMED_OBSERVATION' | 'INFERRED_SERVICE';
+
+export interface ActiveScanJob {
+  id: string;
+  organization_id: string;
+  asset_id: string;
+  target: string;
+  target_ip?: string;
+  scan_profile: ScanProfile;
+  selected_ports: string;
+  max_concurrency: number;
+  timeout_seconds: number;
+  status: ActiveScanStatus;
+  progress_percent: number;
+  current_stage: string;
+  authorized_scope: string;
+  initiated_by_user_id?: string;
+  authorization_confirmed: boolean;
+  authorized_at: string;
+  started_at?: string;
+  completed_at?: string;
+  error_message?: string;
+  scope_validation_result?: string;
+  services_discovered_count: number;
+  ports_scanned_count: number;
+  discovery_policy: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DiscoveredService {
+  id: string;
+  organization_id: string;
+  asset_id: string;
+  job_id: string;
+  target: string;
+  target_ip: string;
+  port: number;
+  protocol: string;
+  service_name: string;
+  state: ServiceState;
+  confidence: ServiceConfidence;
+  banner?: string;
+  tls_metadata?: string;
+  http_metadata?: string;
+  raw_evidence?: string;
+  discovered_at: string;
+}
+
+export interface ActiveScanCreatePayload {
+  asset_id: string;
+  scan_profile: ScanProfile;
+  custom_ports?: number[];
+  authorization_confirmed: boolean;
+}
+
+

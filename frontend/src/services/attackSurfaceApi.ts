@@ -5,6 +5,9 @@ import {
   DiscoveryJobCreatePayload,
   DiscoveredDomain,
   ExposureFinding,
+  ActiveScanJob,
+  ActiveScanCreatePayload,
+  DiscoveredService,
 } from '@/types/attackSurface';
 
 export const attackSurfaceApi = {
@@ -55,6 +58,42 @@ export const attackSurfaceApi = {
     category?: string;
   }): Promise<ExposureFinding[]> {
     const res = await api.get<ExposureFinding[]>('/attack-surface/findings', { params });
+    return res.data;
+  },
+
+  async listActiveScans(assetId?: string): Promise<ActiveScanJob[]> {
+    const params = assetId ? { asset_id: assetId } : {};
+    const res = await api.get<ActiveScanJob[]>('/attack-surface/active-scans', { params });
+    return res.data;
+  },
+
+  async getActiveScan(jobId: string): Promise<ActiveScanJob> {
+    const res = await api.get<ActiveScanJob>(`/attack-surface/active-scans/${jobId}`);
+    return res.data;
+  },
+
+  async createActiveScan(payload: ActiveScanCreatePayload): Promise<ActiveScanJob> {
+    const res = await api.post<ActiveScanJob>('/attack-surface/active-scans', payload);
+    return res.data;
+  },
+
+  async cancelActiveScan(jobId: string, reason?: string): Promise<ActiveScanJob> {
+    const res = await api.post<ActiveScanJob>(`/attack-surface/active-scans/${jobId}/cancel`, { reason });
+    return res.data;
+  },
+
+  async listScanServices(jobId: string): Promise<DiscoveredService[]> {
+    const res = await api.get<DiscoveredService[]>(`/attack-surface/active-scans/${jobId}/services`);
+    return res.data;
+  },
+
+  async listServices(params?: {
+    asset_id?: string;
+    port?: number;
+    service_name?: string;
+    state?: string;
+  }): Promise<DiscoveredService[]> {
+    const res = await api.get<DiscoveredService[]>('/attack-surface/services', { params });
     return res.data;
   },
 };

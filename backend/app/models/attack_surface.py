@@ -292,3 +292,132 @@ class ExposureFinding(Base, TimestampMixin):
     # Relationship
     job: Mapped["DiscoveryJob"] = relationship("DiscoveryJob", back_populates="findings")
 
+
+class ScanProfile:
+    BASIC = "BASIC"
+    STANDARD = "STANDARD"
+    CUSTOM = "CUSTOM"
+
+
+class ActiveScanJobStatus:
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    FAILED = "FAILED"
+
+
+class ServiceState:
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+    FILTERED = "FILTERED"
+
+
+class ServiceConfidence:
+    CONFIRMED_OBSERVATION = "CONFIRMED_OBSERVATION"
+    INFERRED_SERVICE = "INFERRED_SERVICE"
+
+
+class ActiveScanJob(Base, TimestampMixin):
+    __tablename__ = "active_scan_jobs"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("managed_assets.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    target: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    target_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    scan_profile: Mapped[str] = mapped_column(String(20), default=ScanProfile.BASIC, nullable=False)
+    selected_ports: Mapped[str] = mapped_column(Text, nullable=False)  # JSON-encoded list of int ports
+    max_concurrency: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    timeout_seconds: Mapped[float] = mapped_column(Float, default=2.0, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default=ActiveScanJobStatus.PENDING, nullable=False, index=True)
+    progress_percent: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    current_stage: Mapped[str] = mapped_column(String(100), default="QUEUED", nullable=False)
+    authorized_scope: Mapped[str] = mapped_column(String(255), nullable=False)
+    initiated_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    authorization_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    authorized_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    scope_validation_result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    services_discovered_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    ports_scanned_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    discovery_policy: Mapped[str] = mapped_column(String(50), default="CONTROLLED_ACTIVE", nullable=False)
+
+    # Relationships
+    services: Mapped[List["DiscoveredService"]] = relationship(
+        "DiscoveredService",
+        back_populates="job",
+        cascade="all, delete-orphan",
+    )
+    asset: Mapped["ManagedAsset"] = relationship("ManagedAsset")
+    organization: Mapped["Organization"] = relationship("Organization")
+    initiated_by: Mapped["User"] = relationship("User")
+
+    @property
+    def target_domain(self) -> str:
+        """Alias for compatibility with ScopeValidator."""
+        return self.target
+
+
+class DiscoveredService(Base, TimestampMixin):
+    __tablename__ = "discovered_services"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("managed_assets.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("active_scan_jobs.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    target: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    target_ip: Mapped[str] = mapped_column(String(45), nullable=False, index=True)
+    port: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    protocol: Mapped[str] = mapped_column(String(10), default="tcp", nullable=False)
+    service_name: Mapped[str] = mapped_column(String(50), default="unknown", nullable=False, index=True)
+    state: Mapped[str] = mapped_column(String(20), default=ServiceState.OPEN, nullable=False)
+    confidence: Mapped[str] = mapped_column(
+        String(30),
+        default=ServiceConfidence.CONFIRMED_OBSERVATION,
+        nullable=False,
+    )
+    banner: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    tls_metadata: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    http_metadata: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    raw_evidence: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    discovered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    # Relationships
+    job: Mapped["ActiveScanJob"] = relationship("ActiveScanJob", back_populates="services")
+    asset: Mapped["ManagedAsset"] = relationship("ManagedAsset")
+    organization: Mapped["Organization"] = relationship("Organization")
+
+

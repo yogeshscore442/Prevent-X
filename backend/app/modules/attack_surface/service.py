@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from fastapi import HTTPException, status
 
+from backend.app.models.asset import ManagedAsset
 from backend.app.models.attack_surface import (
     DiscoveryJob,
     DiscoveryJobStatus,
@@ -19,9 +20,15 @@ from backend.app.models.attack_surface import (
     DNSRecord,
     ExposureFinding,
     FindingSeverity,
+    ActiveScanJob,
+    ActiveScanJobStatus,
+    DiscoveredService,
+    ScanProfile,
 )
+from backend.app.database.base import utc_now
 from backend.app.models.audit_log import AuditEvent
 from backend.app.modules.attack_surface.scope_validator import ScopeValidator, ScopeValidationError
+from backend.app.modules.attack_surface.tasks.active_scan_tasks import execute_active_scan_job
 from backend.app.modules.attack_surface.schemas import (
     AttackSurfaceOverviewResponse,
     DiscoveryJobResponse,
@@ -308,4 +315,222 @@ class AttackSurfaceService:
             findings_by_category=findings_by_category,
             recent_jobs=recent_jobs,
         )
+
+    # ==========================================
+    # Controlled Active Service Discovery Methods
+    # ==========================================
+
+    @classmethod
+    def create_active_scan(
+        cls,
+        db: Session,
+        organization_id: UUID,
+        user_id: UUID,
+        asset_id: UUID,
+        scan_profile: str,
+        custom_ports: Optional[List[int]],
+        authorization_confirmed: bool,
+    ) -> ActiveScanJob:
+        """
+        Validates scope, registers active scan job, and dispatches Celery task.
+        """
+        asset = db.query(ManagedAsset).filter(
+            ManagedAsset.id == asset_id,
+            ManagedAsset.organization_id == organization_id,
+        ).first()
+
+        if not asset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Asset '{asset_id}' not found in organization.",
+            )
+
+        # Validate authorization and boundaries
+        ports, target_ip, validation_evidence = ScopeValidator.validate_and_authorize_active_scan(
+            db=db,
+            asset=asset,
+            organization_id=organization_id,
+            user=user_id,
+            scan_profile=scan_profile,
+            custom_ports=custom_ports,
+            authorization_confirmed=authorization_confirmed,
+        )
+
+        # Prevent duplicate active scan on this asset
+        active_job = db.query(ActiveScanJob).filter(
+            ActiveScanJob.organization_id == organization_id,
+            ActiveScanJob.asset_id == asset_id,
+            ActiveScanJob.status.in_([ActiveScanJobStatus.PENDING, ActiveScanJobStatus.RUNNING]),
+        ).first()
+
+        if active_job:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"An active scan ({active_job.id}) is already in progress for asset '{asset.name}'.",
+            )
+
+        job = ActiveScanJob(
+            organization_id=organization_id,
+            asset_id=asset.id,
+            target=asset.target,
+            target_ip=target_ip,
+            scan_profile=scan_profile.upper(),
+            selected_ports=json.dumps(ports),
+            max_concurrency=5,
+            timeout_seconds=2.0,
+            status=ActiveScanJobStatus.PENDING,
+            progress_percent=0,
+            current_stage="QUEUED",
+            authorized_scope=asset.target,
+            initiated_by_user_id=user_id,
+            authorization_confirmed=True,
+            authorized_at=utc_now(),
+            scope_validation_result=json.dumps(validation_evidence),
+            discovery_policy="CONTROLLED_ACTIVE",
+        )
+        db.add(job)
+        db.flush()
+
+        # Audit event
+        audit = AuditEvent(
+            organization_id=organization_id,
+            user_id=user_id,
+            action="ACTIVE_DISCOVERY_INITIATED",
+            resource_type="ACTIVE_SCAN_JOB",
+            resource_id=str(job.id),
+            status="SUCCESS",
+            details=json.dumps({
+                "target": asset.target,
+                "scan_profile": scan_profile.upper(),
+                "ports_count": len(ports),
+            }),
+        )
+        db.add(audit)
+        db.commit()
+        db.refresh(job)
+
+        # Dispatch Celery background task
+        try:
+            execute_active_scan_job.delay(str(job.id))
+            logger.info(f"Dispatched Celery task execute_active_scan_job for job {job.id}")
+        except Exception as exc:
+            logger.error(f"Failed to dispatch Celery active scan task: {exc}. Job remains PENDING.")
+
+        return job
+
+    @classmethod
+    def get_active_scan(
+        cls,
+        db: Session,
+        organization_id: UUID,
+        job_id: UUID,
+    ) -> ActiveScanJob:
+        """Retrieves an active scan job by ID with strict tenant boundary enforcement."""
+        job = db.query(ActiveScanJob).filter(
+            ActiveScanJob.id == job_id,
+            ActiveScanJob.organization_id == organization_id,
+        ).first()
+
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Active scan job '{job_id}' not found.",
+            )
+        return job
+
+    @classmethod
+    def list_active_scans(
+        cls,
+        db: Session,
+        organization_id: UUID,
+        asset_id: Optional[UUID] = None,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> Tuple[List[ActiveScanJob], int]:
+        """Lists active scan jobs for tenant with optional asset filter."""
+        query = db.query(ActiveScanJob).filter(
+            ActiveScanJob.organization_id == organization_id
+        )
+        if asset_id:
+            query = query.filter(ActiveScanJob.asset_id == asset_id)
+
+        total = query.count()
+        jobs = query.order_by(desc(ActiveScanJob.created_at)).offset(skip).limit(limit).all()
+        return jobs, total
+
+    @classmethod
+    def cancel_active_scan(
+        cls,
+        db: Session,
+        organization_id: UUID,
+        job_id: UUID,
+        user_id: UUID,
+        reason: Optional[str] = None,
+    ) -> ActiveScanJob:
+        """Cancels an active scan job in progress."""
+        job = cls.get_active_scan(db, organization_id, job_id)
+
+        if job.status in [
+            ActiveScanJobStatus.COMPLETED,
+            ActiveScanJobStatus.CANCELLED,
+            ActiveScanJobStatus.FAILED,
+        ]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot cancel scan in terminal state '{job.status}'.",
+            )
+
+        job.status = ActiveScanJobStatus.CANCELLED
+        job.completed_at = utc_now()
+        job.current_stage = "CANCELLED_BY_USER"
+
+        audit = AuditEvent(
+            organization_id=organization_id,
+            user_id=user_id,
+            action="ACTIVE_DISCOVERY_CANCELLED",
+            resource_type="ACTIVE_SCAN_JOB",
+            resource_id=str(job.id),
+            status="SUCCESS",
+            details=json.dumps({"reason": reason or "User requested cancellation"}),
+        )
+        db.add(audit)
+        db.commit()
+        db.refresh(job)
+        return job
+
+    @classmethod
+    def list_discovered_services(
+        cls,
+        db: Session,
+        organization_id: UUID,
+        job_id: Optional[UUID] = None,
+        asset_id: Optional[UUID] = None,
+        port: Optional[int] = None,
+        service_name: Optional[str] = None,
+        state: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> Tuple[List[DiscoveredService], int]:
+        """Lists discovered services with multi-tenant filtering."""
+        query = db.query(DiscoveredService).filter(
+            DiscoveredService.organization_id == organization_id
+        )
+        if job_id:
+            query = query.filter(DiscoveredService.job_id == job_id)
+        if asset_id:
+            query = query.filter(DiscoveredService.asset_id == asset_id)
+        if port:
+            query = query.filter(DiscoveredService.port == port)
+        if service_name:
+            query = query.filter(DiscoveredService.service_name.ilike(f"%{service_name}%"))
+        if state:
+            query = query.filter(DiscoveredService.state == state)
+
+        total = query.count()
+        services = query.order_by(
+            DiscoveredService.asset_id,
+            DiscoveredService.port.asc()
+        ).offset(skip).limit(limit).all()
+        return services, total
+
 

@@ -181,3 +181,70 @@ class AttackSurfaceOverviewResponse(BaseModel):
     findings_by_category: Dict[str, int]
     recent_jobs: List[DiscoveryJobResponse]
 
+
+class ActiveScanCreateRequest(BaseModel):
+    """Schema for initiating an authorized active service discovery scan."""
+    asset_id: UUID = Field(..., description="Target managed asset ID owned by the active organization")
+    scan_profile: str = Field("BASIC", description="Scan profile: BASIC, STANDARD, or CUSTOM")
+    custom_ports: Optional[List[int]] = Field(None, description="List of ports (1-65535, max 50) when scan_profile=CUSTOM")
+    authorization_confirmed: bool = Field(..., description="Mandatory confirmation that user possesses authorization to actively scan target")
+
+
+class ActiveScanCancelRequest(BaseModel):
+    """Schema for cancelling an in-flight active scan."""
+    reason: Optional[str] = Field(None, max_length=255, description="Optional cancellation justification")
+
+
+class DiscoveredServiceResponse(BaseModel):
+    """Public representation of a discovered network service."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    organization_id: UUID
+    asset_id: UUID
+    job_id: UUID
+    target: str
+    target_ip: str
+    port: int
+    protocol: str
+    service_name: str
+    state: str
+    confidence: str
+    banner: Optional[str] = None
+    tls_metadata: Optional[str] = None
+    http_metadata: Optional[str] = None
+    raw_evidence: Optional[str] = None
+    discovered_at: datetime
+
+
+class ActiveScanJobResponse(BaseModel):
+    """Public representation of an active scan job."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    organization_id: UUID
+    asset_id: UUID
+    target: str
+    target_ip: Optional[str] = None
+    scan_profile: str
+    selected_ports: str
+    max_concurrency: int
+    timeout_seconds: float
+    status: str
+    progress_percent: int
+    current_stage: str
+    authorized_scope: str
+    initiated_by_user_id: Optional[UUID] = None
+    authorization_confirmed: bool
+    authorized_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+    scope_validation_result: Optional[str] = None
+    services_discovered_count: int
+    ports_scanned_count: int
+    discovery_policy: str
+    created_at: datetime
+    updated_at: datetime
+
+

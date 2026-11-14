@@ -257,6 +257,135 @@ class ScopeValidator:
 
         return asset, effective_target, effective_policy, validation_evidence
 
+    PORT_PROFILES = {
+        "BASIC": [80, 443],
+        "STANDARD": [21, 22, 25, 53, 80, 110, 143, 443, 465, 587, 993, 995, 3306, 3389, 5432, 8080, 8443],
+    }
+    MAX_CUSTOM_PORTS = 50
+
+    @classmethod
+    def validate_port_profile(
+        cls,
+        scan_profile: str,
+        custom_ports: Optional[List[int]] = None,
+    ) -> List[int]:
+        """
+        Validates and returns normalized list of ports for active scanning.
+        Enforces strict profile restrictions and max 50 custom ports.
+        """
+        profile = (scan_profile or "BASIC").upper().strip()
+        if profile == "BASIC":
+            return cls.PORT_PROFILES["BASIC"].copy()
+        elif profile == "STANDARD":
+            return cls.PORT_PROFILES["STANDARD"].copy()
+        elif profile == "CUSTOM":
+            if not custom_ports or not isinstance(custom_ports, list):
+                raise ScopeValidationError("CUSTOM scan profile requires a non-empty list of 'custom_ports'.")
+            if len(custom_ports) == 0:
+                raise ScopeValidationError("CUSTOM scan profile requires at least 1 port.")
+            if len(custom_ports) > cls.MAX_CUSTOM_PORTS:
+                raise ScopeValidationError(
+                    f"CUSTOM scan profile exceeds maximum limit of {cls.MAX_CUSTOM_PORTS} ports. Received {len(custom_ports)}."
+                )
+
+            validated = []
+            for p in custom_ports:
+                if not isinstance(p, int) or isinstance(p, bool):
+                    raise ScopeValidationError(f"Invalid port value '{p}'. Ports must be integers.")
+                if p < 1 or p > 65535:
+                    raise ScopeValidationError(f"Port {p} is out of valid range (1-65535).")
+                if p not in validated:
+                    validated.append(p)
+
+            if len(validated) > cls.MAX_CUSTOM_PORTS:
+                raise ScopeValidationError(f"Too many unique ports. Maximum allowed is {cls.MAX_CUSTOM_PORTS}.")
+
+            validated.sort()
+            return validated
+        else:
+            raise ScopeValidationError(f"Invalid scan profile '{scan_profile}'. Supported profiles: BASIC, STANDARD, CUSTOM.")
+
+    @classmethod
+    def validate_and_authorize_active_scan(
+        cls,
+        db: Session,
+        asset: ManagedAsset,
+        organization_id: UUID,
+        user: Any,
+        scan_profile: str,
+        custom_ports: Optional[List[int]],
+        authorization_confirmed: bool,
+    ) -> Tuple[List[int], str, Dict[str, Any]]:
+        """
+        Enforces all mandatory authorization controls before launching active service discovery:
+        1. Explicit authorization confirmation check.
+        2. Asset ownership and is_in_scope check.
+        3. Port profile and port limit restrictions.
+        4. Target IP / Hostname resolution and SSRF defense (loopback, metadata, unauthorized private).
+        5. Scope validation evidence record generation.
+        """
+        if not authorization_confirmed:
+            raise ScopeValidationError(
+                "Explicit authorization confirmation is required before initiating an active service discovery scan.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if asset.organization_id != organization_id:
+            raise ScopeValidationError(
+                f"Asset '{asset.id}' does not belong to active organization.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not asset.is_in_scope:
+            raise ScopeValidationError(
+                f"Asset '{asset.name}' is flagged out-of-scope for scanning.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate port profile
+        ports = cls.validate_port_profile(scan_profile, custom_ports)
+
+        # Normalize target
+        normalized_target = cls.normalize_target(asset.target)
+
+        # Determine if asset is authorized internal
+        is_internal_asset = (
+            asset.asset_type in ("INTERNAL_SERVER", "PRIVATE_NETWORK", "INTERNAL_NETWORK")
+            or getattr(asset, "is_internal", False)
+        )
+
+        # Validate IP or Hostname
+        target_ip_obj = SSRFDefense.parse_and_normalize_ip(normalized_target)
+        if target_ip_obj:
+            forbidden, reason = SSRFDefense.is_ip_forbidden(target_ip_obj, allow_private=is_internal_asset)
+            if forbidden:
+                raise ScopeValidationError(f"Target IP '{normalized_target}' is forbidden: {reason}", status_code=status.HTTP_403_FORBIDDEN)
+            target_ip_str = str(target_ip_obj)
+        else:
+            # Validate hostname
+            try:
+                SSRFDefense.validate_hostname(normalized_target)
+                resolved_ips = SSRFDefense.validate_dns_resolution(normalized_target, allow_private=is_internal_asset)
+                if not resolved_ips:
+                    raise ScopeValidationError(f"Failed to resolve target hostname '{normalized_target}'.")
+                target_ip_str = resolved_ips[0]
+            except SSRFValidationError as e:
+                raise ScopeValidationError(detail=e.detail, status_code=e.status_code)
+
+        evidence = {
+            "status": "APPROVED",
+            "organization_id": str(organization_id),
+            "asset_id": str(asset.id),
+            "effective_target": normalized_target,
+            "resolved_ip": target_ip_str,
+            "discovery_policy": "CONTROLLED_ACTIVE",
+            "scan_profile": scan_profile.upper(),
+            "ports": ports,
+            "validated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        return ports, target_ip_str, evidence
+
     @classmethod
     def validate_worker_execution_authorization(
         cls,
@@ -379,6 +508,30 @@ class ScopeValidator:
                         raise WorkerAuthorizationError(
                             f"Asset '{asset.name}' is no longer registered as an internal asset type (asset_type={asset.asset_type})."
                         )
+        elif effective_policy == "CONTROLLED_ACTIVE":
+            is_internal_asset = (
+                asset.asset_type in ("INTERNAL_SERVER", "PRIVATE_NETWORK", "INTERNAL_NETWORK")
+                or getattr(asset, "is_internal", False)
+            )
+            candidate_ip = SSRFDefense.parse_and_normalize_ip(candidate)
+            if candidate_ip:
+                forbidden, reason = SSRFDefense.is_ip_forbidden(candidate_ip, allow_private=is_internal_asset)
+                if forbidden:
+                    raise WorkerAuthorizationError(f"Target '{candidate}' violates CONTROLLED_ACTIVE boundary: {reason}")
+            else:
+                asset_apex = cls.extract_apex_domain(normalized_asset_target)
+                candidate_apex = cls.extract_apex_domain(candidate)
+                if candidate_apex != asset_apex and not candidate.endswith(f".{normalized_asset_target}") and candidate != normalized_asset_target:
+                    raise WorkerAuthorizationError(
+                        f"Target '{candidate}' is outside the authorized scope of asset '{asset.name}' ({normalized_asset_target})."
+                    )
+                resolved_ip_str = scope_evidence.get("resolved_ip")
+                if resolved_ip_str:
+                    res_ip = SSRFDefense.parse_and_normalize_ip(resolved_ip_str)
+                    if res_ip:
+                        forbidden, reason = SSRFDefense.is_ip_forbidden(res_ip, allow_private=is_internal_asset)
+                        if forbidden:
+                            raise WorkerAuthorizationError(f"Resolved IP '{resolved_ip_str}' violates boundary: {reason}")
         else:
             # PUBLIC_PASSIVE: target must be within asset apex and must not be private
             candidate_ip = SSRFDefense.parse_and_normalize_ip(candidate)

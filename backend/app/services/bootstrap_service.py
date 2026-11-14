@@ -29,6 +29,7 @@ SYSTEM_PERMISSIONS = [
     (PermissionCode.DISCOVERY_CREATE, "Initiate Discovery", "Allows initiating external passive discovery scans", "attack_surface"),
     (PermissionCode.DISCOVERY_CANCEL, "Cancel Discovery", "Allows cancelling running discovery operations", "attack_surface"),
     (PermissionCode.DISCOVERY_INTERNAL, "Authorized Internal Discovery", "Allows initiating internal scoped discovery on authorized internal assets", "attack_surface"),
+    (PermissionCode.DISCOVERY_ACTIVE, "Initiate Active Discovery", "Allows initiating controlled active TCP port and service discovery scans", "attack_surface"),
 ]
 
 SYSTEM_ROLES = [

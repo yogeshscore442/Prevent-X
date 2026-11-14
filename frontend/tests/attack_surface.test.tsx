@@ -41,6 +41,12 @@ vi.mock('@/services/attackSurfaceApi', () => ({
     createJob: vi.fn(),
     cancelJob: vi.fn(),
     getDomainDetail: vi.fn(),
+    listActiveScans: vi.fn(),
+    getActiveScan: vi.fn(),
+    createActiveScan: vi.fn(),
+    cancelActiveScan: vi.fn(),
+    listScanServices: vi.fn(),
+    listServices: vi.fn(),
   },
 }));
 
@@ -138,6 +144,47 @@ describe('AttackSurfacePage Component (Phase 2 Prompt 1)', () => {
         current_status: 'ACTIVE',
       },
     ]);
+
+    (attackSurfaceApi.listActiveScans as any).mockResolvedValue([
+      {
+        id: 'scan-1',
+        target: 'portal.smbclient.in',
+        target_ip: '203.0.113.15',
+        scan_profile: 'BASIC',
+        selected_ports: '[80, 443]',
+        status: 'COMPLETED',
+        progress_percent: 100,
+        current_stage: 'COMPLETED',
+        ports_scanned_count: 2,
+        services_discovered_count: 2,
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+      },
+    ]);
+
+    (attackSurfaceApi.listServices as any).mockResolvedValue([
+      {
+        id: 'svc-1',
+        port: 443,
+        protocol: 'tcp',
+        service_name: 'https',
+        state: 'OPEN',
+        confidence: 'CONFIRMED_OBSERVATION',
+        target: 'portal.smbclient.in',
+        target_ip: '203.0.113.15',
+        tls_metadata: JSON.stringify({
+          subject_cn: 'portal.smbclient.in',
+          issuer: 'Let\'s Encrypt',
+          days_remaining: 85,
+        }),
+        http_metadata: JSON.stringify({
+          status_code: 200,
+          server_header: 'nginx',
+          title: 'SMB Portal Login',
+        }),
+        discovered_at: new Date().toISOString(),
+      },
+    ]);
   });
 
   it('renders page header and navigation tabs', async () => {
@@ -153,6 +200,7 @@ describe('AttackSurfacePage Component (Phase 2 Prompt 1)', () => {
     expect(screen.getByText('MOD-01 (Phase 2)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /overview/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discovery center/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /active service discovery/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discovered assets/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /findings/i })).toBeInTheDocument();
   });
@@ -222,5 +270,43 @@ describe('AttackSurfacePage Component (Phase 2 Prompt 1)', () => {
     fireEvent.click(findingsTabBtn);
     expect(await screen.findByText('Missing SPF Record (Email Spoofing Risk)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /view evidence/i })).toBeInTheDocument();
+  });
+
+  it('switches to Active Service Discovery tab, validates authorization checkbox, profiles, and services table', async () => {
+    render(
+      <BrowserRouter>
+        <AuthProvider>
+          <AttackSurfacePage />
+        </AuthProvider>
+      </BrowserRouter>
+    );
+
+    const activeTabBtn = await screen.findByRole('button', { name: /active service discovery/i });
+    fireEvent.click(activeTabBtn);
+
+    expect(await screen.findByText('Controlled Active Service Discovery Engine')).toBeInTheDocument();
+    expect(screen.getByText('Mandatory Security Testing Authorization')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /BASIC/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /STANDARD/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /CUSTOM/i })).toBeInTheDocument();
+
+    const submitBtn = screen.getByRole('button', { name: /launch active scan/i });
+    expect(submitBtn).toBeDisabled();
+
+    // Check authorization checkbox
+    const checkbox = screen.getByRole('checkbox');
+    fireEvent.click(checkbox);
+    expect(submitBtn).toBeEnabled();
+
+    // Verify discovered services table shows mocked service
+    expect(screen.getByText('443 / tcp')).toBeInTheDocument();
+    expect(screen.getByText('https')).toBeInTheDocument();
+    expect(screen.getByText('Confirmed')).toBeInTheDocument();
+
+    // Inspect service modal
+    const inspectBtn = screen.getByRole('button', { name: /inspect/i });
+    fireEvent.click(inspectBtn);
+    expect(screen.getAllByText(/TLS Certificate Metadata/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/HTTP Endpoint Telemetry/i).length).toBeGreaterThan(0);
   });
 });

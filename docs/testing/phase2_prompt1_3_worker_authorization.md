@@ -163,3 +163,4 @@ DB final error message: Worker authorization rejected: Job lacks mandatory user 
 ```
 
 This live telemetry confirms that the background worker enforces authorization autonomously, protecting internal and external infrastructure even in the event of queuing delays, database modifications, or compromised session tokens.
+

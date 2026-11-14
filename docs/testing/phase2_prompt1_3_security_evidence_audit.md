@@ -82,7 +82,7 @@ Every external target contacted during live test execution must possess a record
 LIVE_TEST_AUTHORIZATION_REGISTRY = {
     "example.com": {
         "target": "example.com",
-        "authorization_source": "RFC_2606_RESERVED_PROTOCOL_TESTING",
+        "fixture_type": "RFC 2606 Reserved Domain Protocol Test Fixture (Non-Authorization Fixture)",
         "authorization_scope": "READ_ONLY_PASSIVE_PROTOCOL_SYNTAX",
         "owner": "Internet Assigned Numbers Authority (IANA) / ICANN",
         "policy": "PUBLIC_PASSIVE",
@@ -139,3 +139,4 @@ backend/tests/test_tenant_isolation.py ................................. PASSED 
 | **Redirect Revalidation** | `SafePinningTransport` response hook | Every HTTP 3xx redirect hop | **VERIFIED** (Private/metadata redirects aborted) |
 | **Payload Limiter** | `SafePinningTransport` response hook | Content-Length inspection | **VERIFIED** (Payloads > 5 MB terminated) |
 | **Legal Authorization** | Strict written permission policy | API, DB & Worker lifecycle | **VERIFIED** (Third-party scanning forbidden) |
+
