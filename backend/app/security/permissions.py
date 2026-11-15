@@ -67,6 +67,9 @@ class PermissionCode:
     VIRTUAL_PATCH_APPROVE = "virtual_patch:approve"
     VIRTUAL_PATCH_DEPLOY = "virtual_patch:deploy"
     WAF_LOGS_READ = "waf_logs:read"
+    VALIDATION_READ = "validation:read"
+    VALIDATION_RUN = "validation:run"
+    ROLLBACK_EXECUTE = "rollback:execute"
 
 
 # Default Role-Permission matrix
@@ -108,6 +111,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.VIRTUAL_PATCH_APPROVE,
         PermissionCode.VIRTUAL_PATCH_DEPLOY,
         PermissionCode.WAF_LOGS_READ,
+        PermissionCode.VALIDATION_READ,
+        PermissionCode.VALIDATION_RUN,
+        PermissionCode.ROLLBACK_EXECUTE,
     },
     SystemRole.ORG_ADMIN: {
         PermissionCode.ORG_READ,
@@ -144,6 +150,9 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.VIRTUAL_PATCH_APPROVE,
         PermissionCode.VIRTUAL_PATCH_DEPLOY,
         PermissionCode.WAF_LOGS_READ,
+        PermissionCode.VALIDATION_READ,
+        PermissionCode.VALIDATION_RUN,
+        PermissionCode.ROLLBACK_EXECUTE,
     },
     SystemRole.SECURITY_ANALYST: {
         PermissionCode.ORG_READ,
@@ -173,6 +182,8 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.VIRTUAL_PATCH_READ,
         PermissionCode.VIRTUAL_PATCH_WRITE,
         PermissionCode.WAF_LOGS_READ,
+        PermissionCode.VALIDATION_READ,
+        PermissionCode.VALIDATION_RUN,
     },
     SystemRole.AUDITOR: {
         PermissionCode.ORG_READ,
@@ -189,6 +200,7 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.RESPONSE_ACTION_READ,
         PermissionCode.VIRTUAL_PATCH_READ,
         PermissionCode.WAF_LOGS_READ,
+        PermissionCode.VALIDATION_READ,
     },
     SystemRole.VIEWER: {
         PermissionCode.ORG_READ,

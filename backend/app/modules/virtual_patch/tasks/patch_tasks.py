@@ -112,3 +112,4 @@ def deploy_virtual_patches_job(
         raise
     finally:
         db.close()
+

@@ -36,9 +36,9 @@ CWE_ATTACK_SIGNATURES = {
         "attack_type": AttackType.SQLI.value,
         "name_prefix": "Virtual Patch: SQL Injection Protection",
         "patterns": [
-            r"(?i)(union\s+all\s+select|union\s+select|select\s+.*\s+from|insert\s+into|delete\s+from|drop\s+table)",
-            r"(?i)('\s*(or|and)\s*('|[0-9]+=[0-9]+|true)|--\s*$|;\s*--)",
-            r"(?i)(waitfor\s+delay|sleep\s*\(|benchmark\s*\(|pg_sleep\s*\()",
+            r"(?i)(union(\s+|\+|%20)+all(\s+|\+|%20)+select|union(\s+|\+|%20)+select|select(\s+|\+|%20)+.*(\s+|\+|%20)+from|insert(\s+|\+|%20)+into|delete(\s+|\+|%20)+from|drop(\s+|\+|%20)+table)",
+            r"(?i)('|\%27)\s*(\+|%20)?(or|and)\s*(\+|%20)?('|\%27|[0-9]+(=|%3d|%3D)[0-9]+|true)|--\s*$|;\s*--",
+            r"(?i)(waitfor(\s+|\+|%20)+delay|sleep\s*\(|benchmark\s*\(|pg_sleep\s*\()",
         ],
         "rationale": "Compensates for SQL injection flaws (CWE-89) by terminating requests containing unauthorized SQL keywords, tautologies, or blind timing payloads at the gateway tier.",
         "default_target": "QUERY",
@@ -48,8 +48,8 @@ CWE_ATTACK_SIGNATURES = {
         "attack_type": AttackType.XSS.value,
         "name_prefix": "Virtual Patch: Cross-Site Scripting (XSS) Filter",
         "patterns": [
-            r"(?i)((<|%3c)script[\s>%]|javascript:|vbscript:|data:text/html)",
-            r"(?i)(onerror\s*=|onload\s*=|onclick\s*=|onmouseover\s*=|onfocus\s*=)",
+            r"(?i)((<|%3c|%253c)script[\s>%+;]|javascript:|vbscript:|data:text/html)",
+            r"(?i)(onerror|onload|onclick|onmouseover|onfocus)\s*(=|%3d|\+|%3D)",
             r"(?i)(document\.cookie|document\.location|window\.location|eval\s*\()",
         ],
         "rationale": "Neutralizes client-side script injection (CWE-79) by rejecting non-sanitized HTML tags, script attributes, and DOM manipulation expressions in user inputs.",
@@ -60,8 +60,8 @@ CWE_ATTACK_SIGNATURES = {
         "attack_type": AttackType.PATH_TRAVERSAL.value,
         "name_prefix": "Virtual Patch: Directory Traversal Restriction",
         "patterns": [
-            r"(?i)(\.\./|\.\.\\|%2e%2e%2f|%2e%2e\/|\.\.%2f|%2e%2e%5c)",
-            r"(?i)(/etc/passwd|/etc/shadow|/proc/self|win\.ini|boot\.ini|windows[\\/]system32)",
+            r"(?i)(\.\./|\.\.\\|%2e%2e%2f|%2e%2e\/|\.\.%2f|%2e%2e%5c|%252e%252e%252f)",
+            r"(?i)(/|%2f)(etc(/|%2f)(passwd|shadow)|proc(/|%2f)self|win\.ini|boot\.ini|windows[\\/]system32)",
         ],
         "rationale": "Prevents unauthorized file system escape (CWE-22) by blocking directory escalation sequences and references to critical operating system files.",
         "default_target": "URI",
@@ -71,7 +71,7 @@ CWE_ATTACK_SIGNATURES = {
         "attack_type": AttackType.CMDI.value,
         "name_prefix": "Virtual Patch: OS Command Injection Barrier",
         "patterns": [
-            r"(?i)((;|%3b)\s*(cat|ls|id|whoami|curl|wget|nc|sh|bash|powershell)|(\| |%7c)\s*(cat|ls|id|whoami|sh|bash)|\$\(.*\)|`.*`)",
+            r"(?i)((;|%3b)\s*(cat|ls|id|whoami|curl|wget|nc|sh|bash|powershell)|(\| |%7c|\|)\s*(\+|%20)*(cat|ls|id|whoami|sh|bash|grep)|\$\(.*\)|`.*`)",
             r"(?i)(/bin/(bash|sh|zsh)|cmd\.exe|powershell(\.exe)?)",
         ],
         "rationale": "Blocks shell operator chaining and binary execution triggers (CWE-78) attempting to hijack host operating system commands.",

@@ -77,6 +77,22 @@ class NginxProxyManager:
             return False, f"Error executing Nginx syntax test: {e}"
 
     @classmethod
+    def test_configuration_string(cls, config_content: str) -> Tuple[bool, str]:
+        """
+        Writes temporary configuration and runs 'nginx -t' syntax test.
+        """
+        temp_id = f"test_{int(time.time())}"
+        conf_path = cls.write_runtime_config(temp_id, config_content)
+        try:
+            return cls.test_configuration(conf_path)
+        finally:
+            try:
+                if os.path.exists(conf_path):
+                    os.remove(conf_path)
+            except Exception:
+                pass
+
+    @classmethod
     def write_runtime_config(cls, deployment_id: str, config_content: str) -> str:
         """
         Writes configuration to infrastructure/bin/nginx/conf/preventx_<deployment_id>.conf.

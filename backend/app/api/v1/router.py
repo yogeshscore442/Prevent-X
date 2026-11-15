@@ -16,6 +16,7 @@ from backend.app.api.v1.endpoints import (
     attack_paths,
     zero_trust,
     virtual_patching,
+    security_validation,
 )
 
 api_router = APIRouter()
@@ -53,5 +54,9 @@ api_router.include_router(zero_trust.router)
 
 # Intelligent Virtual Patching & Reverse Proxy Engine (MOD-06, MOD-08)
 api_router.include_router(virtual_patching.router)
+
+# Automated Security Validation & Reliable Rollback Engine (MOD-10, MOD-08)
+api_router.include_router(security_validation.router)
+
 
 

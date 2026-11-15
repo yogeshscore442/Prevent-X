@@ -175,3 +175,4 @@ export interface VirtualPatchDeploymentCreatePayload {
   listen_port: number;
   upstream_url: string;
 }
+

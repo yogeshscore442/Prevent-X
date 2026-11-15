@@ -247,3 +247,4 @@ describe('VirtualPatchingPage Component (Phase 6)', () => {
     });
   });
 });
+

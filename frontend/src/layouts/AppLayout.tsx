@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   Layers,
   Workflow,
+  CheckCheck,
   Menu,
   X,
 } from 'lucide-react';
@@ -39,6 +40,7 @@ export const AppLayout: React.FC = () => {
     { name: 'Attack Paths', path: '/attack-paths', icon: Workflow },
     { name: 'Zero Trust & Resilience', path: '/zero-trust', icon: ShieldCheck },
     { name: 'Virtual Patching', path: '/virtual-patching', icon: ShieldAlert },
+    { name: 'Security Validation', path: '/security-validation', icon: CheckCheck },
     { name: 'Organizations', path: '/organizations', icon: Building2 },
     { name: 'Users & Access', path: '/users', icon: Users },
     { name: 'Roles & Permissions', path: '/roles', icon: KeyRound },

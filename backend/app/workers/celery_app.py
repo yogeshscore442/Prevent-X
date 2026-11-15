@@ -18,6 +18,7 @@ celery_app = Celery(
         "backend.app.modules.attack_path.tasks.attack_path_tasks",
         "backend.app.tasks.zero_trust_tasks",
         "backend.app.modules.virtual_patch.tasks.patch_tasks",
+        "backend.app.modules.security_validation.tasks",
     ],
 )
 

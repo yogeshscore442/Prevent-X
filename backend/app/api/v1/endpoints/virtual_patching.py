@@ -492,3 +492,4 @@ def report_false_positive(
         return WafEnforcementLogRead.model_validate(log_entry)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+

@@ -377,6 +377,69 @@ class AutomatedSecurityValidationModule(BaseSecurityModule):
     def target_phase(self) -> int:
         return 7
 
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        from uuid import UUID
+        from backend.app.database.session import SessionLocal
+        from backend.app.modules.security_validation.service import SecurityValidationService
+        from backend.app.modules.security_validation.schemas import ValidationJobCreate
+
+        org_id_val = payload.get("organization_id")
+        if not org_id_val:
+            raise ValueError("organization_id is required.")
+        org_id = UUID(str(org_id_val))
+
+        db = SessionLocal()
+        try:
+            if action_name == "run_validation":
+                dep_id = UUID(str(payload["deployment_id"])) if payload.get("deployment_id") else None
+                job_data = ValidationJobCreate(
+                    deployment_id=dep_id,
+                    environment=payload.get("environment", "STAGING"),
+                    target_url=payload.get("target_url", "http://127.0.0.1:8085"),
+                    canary_percentage=payload.get("canary_percentage", 0),
+                    trigger_type=payload.get("trigger_type", "MANUAL"),
+                )
+                user_id = UUID(str(payload["user_id"])) if payload.get("user_id") else None
+                job = SecurityValidationService.create_and_run_validation_job(
+                    db, organization_id=org_id, data=job_data, user_id=user_id
+                )
+                return {
+                    "status": "SUCCESS",
+                    "job_id": str(job.id),
+                    "job_status": job.status,
+                    "pass_rate": job.pass_rate_percentage,
+                }
+            elif action_name == "execute_rollback":
+                dep_id = UUID(str(payload["deployment_id"]))
+                target_dep_id = UUID(str(payload["target_deployment_id"])) if payload.get("target_deployment_id") else None
+                reason = payload.get("rollback_reason", "Automated security validation failure rollback")
+                user_id = UUID(str(payload["user_id"])) if payload.get("user_id") else None
+                record = SecurityValidationService.execute_rollback(
+                    db,
+                    organization_id=org_id,
+                    deployment_id=dep_id,
+                    rollback_reason=reason,
+                    target_deployment_id=target_dep_id,
+                    operator_user_id=user_id,
+                )
+                return {
+                    "status": "SUCCESS",
+                    "rollback_id": str(record.id),
+                    "rollback_status": record.status,
+                    "verified": record.is_restoration_verified,
+                }
+            elif action_name == "get_overview":
+                stats = SecurityValidationService.get_overview_stats(db, org_id)
+                return {"status": "SUCCESS", "overview": stats}
+            else:
+                raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+        finally:
+            db.close()
+
 
 class AutomatedResponseReliableRollbackModule(BaseSecurityModule):
     @property

@@ -50,6 +50,9 @@ SYSTEM_PERMISSIONS = [
     (PermissionCode.VIRTUAL_PATCH_APPROVE, "Approve Virtual Patches", "Allows approving virtual patch rules for production deployment", "virtual_patch"),
     (PermissionCode.VIRTUAL_PATCH_DEPLOY, "Deploy Virtual Patches", "Allows deploying virtual patches to staging and production reverse proxies", "virtual_patch"),
     (PermissionCode.WAF_LOGS_READ, "View WAF Enforcement Logs", "Allows inspecting real-time WAF request blocks, decisions, and evidence", "virtual_patch"),
+    (PermissionCode.VALIDATION_READ, "View Security Validations", "Allows inspecting automated validation suites, WAF regression matrices, and test results", "validation"),
+    (PermissionCode.VALIDATION_RUN, "Execute Security Validations", "Allows triggering automated security validation and regression probe jobs", "validation"),
+    (PermissionCode.ROLLBACK_EXECUTE, "Execute Reliable Rollback", "Allows initiating atomic rollback of reverse proxy configurations to known-good snapshots", "validation"),
 ]
 
 SYSTEM_ROLES = [

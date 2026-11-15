@@ -244,3 +244,4 @@ class VirtualPatchRecommendation(Base, TimestampMixin):
     vulnerability: Mapped["VulnerabilityRecord"] = relationship("VulnerabilityRecord")
     asset: Mapped["ManagedAsset"] = relationship("ManagedAsset")
     generated_rule: Mapped[Optional["VirtualPatchRule"]] = relationship("VirtualPatchRule")
+

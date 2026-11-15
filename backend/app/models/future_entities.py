@@ -44,6 +44,18 @@ from backend.app.models.virtual_patch import (
     DeploymentEnvironment,
     DeploymentStatus,
 )
+from backend.app.models.security_validation import (
+    ValidationJob,
+    ValidationTestResult,
+    RollbackRecord,
+    CanaryPolicy,
+    ValidationJobStatus,
+    ValidationTriggerType,
+    ValidationTestCategory,
+    TestResultStatus,
+    RollbackStatus,
+    RollbackTriggerSource,
+)
 
 
 

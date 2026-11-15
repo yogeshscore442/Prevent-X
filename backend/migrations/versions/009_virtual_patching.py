@@ -160,3 +160,4 @@ def downgrade() -> None:
     op.drop_table('virtual_patch_deployments')
     op.drop_table('virtual_patch_versions')
     op.drop_table('virtual_patch_rules')
+
