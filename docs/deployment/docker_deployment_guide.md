@@ -54,9 +54,9 @@ Or via HTTP POST:
 curl -X POST http://localhost/api/v1/auth/bootstrap \
   -H "Content-Type: application/json" \
   -d '{
-    "bootstrap_token": "preventx-bootstrap-token-prod-2026",
+    "bootstrap_token": "<YOUR_SECURE_BOOTSTRAP_TOKEN>",
     "email": "admin@preventx.internal",
-    "password": "AdminPasswordSecure2026!",
+    "password": "<STRONG_ADMIN_PASSWORD>",
     "full_name": "Chief Security Officer",
     "initial_organization_name": "Primary SMB Tenant",
     "initial_organization_slug": "smb-primary"

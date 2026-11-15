@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
-import { ZeroTrustPage } from '@/pages/ZeroTrustPage';
+import { ZeroTrustPage, formatErrorMessage } from '@/pages/ZeroTrustPage';
 import { zeroTrustApi } from '@/services/zeroTrustApi';
 
 vi.mock('@/services/zeroTrustApi', () => ({
@@ -324,6 +324,254 @@ describe('ZeroTrustPage Component (Phase 5)', () => {
 
     await waitFor(() => {
       expect(zeroTrustApi.approveResponseAction).toHaveBeenCalledWith('act-1');
+    });
+  });
+
+  describe('Zero Trust Error Resilience & Regression Tests', () => {
+    it('1. Zero Trust renders successfully without error banner when API returns normal data', async () => {
+      render(
+        <BrowserRouter>
+          <ZeroTrustPage />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Zero Trust & Zero-Day Resilience Engine')).toBeInTheDocument();
+      });
+
+      // No error banner should be displayed
+      expect(screen.queryByText(/Action requires permission/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Failed to load Zero Trust telemetry/)).not.toBeInTheDocument();
+    });
+
+    it('2. Structured {code, message} error in response.data.detail does not crash React', async () => {
+      // Mock failure with backend structured HTTPException format
+      vi.mocked(zeroTrustApi.getOverview).mockRejectedValueOnce({
+        response: {
+          status: 403,
+          data: {
+            detail: {
+              code: 'INSUFFICIENT_PERMISSIONS',
+              message: 'Action requires permission: zero_trust:read',
+            },
+          },
+        },
+      });
+
+      render(
+        <BrowserRouter>
+          <ZeroTrustPage />
+        </BrowserRouter>
+      );
+
+      // Verify the page renders successfully and displays the human-readable message
+      await waitFor(() => {
+        expect(screen.getByText('Action requires permission: zero_trust:read')).toBeInTheDocument();
+      });
+
+      // Verify page structure remains intact despite error
+      expect(screen.getByText('Zero Trust & Zero-Day Resilience Engine')).toBeInTheDocument();
+
+      // Dismiss error
+      const closeButtons = screen.getAllByRole('button');
+      const closeErrorBtn = closeButtons.find(btn => btn.querySelector('svg.lucide-x'));
+      if (closeErrorBtn) {
+        fireEvent.click(closeErrorBtn);
+        await waitFor(() => {
+          expect(screen.queryByText('Action requires permission: zero_trust:read')).not.toBeInTheDocument();
+        });
+      }
+    });
+
+    it('3. Direct structured {code, message} in response.data does not crash React', async () => {
+      vi.mocked(zeroTrustApi.getOverview).mockRejectedValueOnce({
+        response: {
+          status: 400,
+          data: {
+            code: 'TENANT_ACCESS_DENIED',
+            message: 'Access denied to cross-tenant resource',
+          },
+        },
+      });
+
+      render(
+        <BrowserRouter>
+          <ZeroTrustPage />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Access denied to cross-tenant resource')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Zero Trust & Zero-Day Resilience Engine')).toBeInTheDocument();
+    });
+
+    it('4. Structured {code, message} error on interactive actions does not crash React', async () => {
+      vi.mocked(zeroTrustApi.evaluatePosture).mockRejectedValueOnce({
+        response: {
+          status: 400,
+          data: {
+            detail: {
+              code: 'POSTURE_EVALUATION_FAILED',
+              message: 'Continuous trust calculation failed: active telemetry unavailable',
+            },
+          },
+        },
+      });
+
+      render(
+        <BrowserRouter>
+          <ZeroTrustPage />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Evaluate Posture')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Evaluate Posture'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Continuous trust calculation failed: active telemetry unavailable')).toBeInTheDocument();
+      });
+    });
+
+    it('5. String errors render correctly in the error alert', async () => {
+      vi.mocked(zeroTrustApi.getOverview).mockRejectedValueOnce(new Error('Network connectivity lost'));
+
+      render(
+        <BrowserRouter>
+          <ZeroTrustPage />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Network connectivity lost')).toBeInTheDocument();
+      });
+    });
+
+    it('6. String detail in response.data.detail renders correctly', async () => {
+      vi.mocked(zeroTrustApi.getOverview).mockRejectedValueOnce({
+        response: {
+          data: {
+            detail: 'Service is temporarily undergoing maintenance.',
+          },
+        },
+      });
+
+      render(
+        <BrowserRouter>
+          <ZeroTrustPage />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Service is temporarily undergoing maintenance.')).toBeInTheDocument();
+      });
+    });
+
+    it('7. formatErrorMessage utility handles string, object, null, and undefined safely', () => {
+      // Null & undefined
+      expect(formatErrorMessage(null)).toBe('');
+      expect(formatErrorMessage(undefined)).toBe('');
+
+      // Primitives
+      expect(formatErrorMessage('Simple error string')).toBe('Simple error string');
+      expect(formatErrorMessage('')).toBe('');
+
+      // Structured {code, message} objects
+      expect(formatErrorMessage({ code: 'AUTH_FAILED', message: 'Session expired' })).toBe('Session expired');
+      expect(formatErrorMessage({ code: 'ONLY_CODE' })).toBe('ONLY_CODE');
+
+      // Nested detail objects
+      expect(formatErrorMessage({ detail: { code: 'TENANT_ERR', message: 'Tenant inactive' } })).toBe('Tenant inactive');
+      expect(formatErrorMessage({ detail: { code: 'ONLY_DETAIL_CODE' } })).toBe('ONLY_DETAIL_CODE');
+      expect(formatErrorMessage({ detail: 'String detail message' })).toBe('String detail message');
+
+      // Standard Error instances
+      expect(formatErrorMessage(new Error('Standard Error exception'))).toBe('Standard Error exception');
+
+      // Array of validation messages
+      expect(formatErrorMessage([{ message: 'First issue' }, { msg: 'Second issue' }])).toBe('First issue, Second issue');
+
+      // Object without known keys
+      expect(formatErrorMessage({})).toBe('An unexpected error occurred.');
+    });
+
+    it('8. Existing Zero Trust controls: decision filter and tab switching remain fully functional', async () => {
+      render(
+        <BrowserRouter>
+          <ZeroTrustPage />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Secure Web Gateway')).toBeInTheDocument();
+        expect(screen.getByText('Compromised Host')).toBeInTheDocument();
+      });
+
+      // Filter by TRUSTED only using the filter button
+      fireEvent.click(screen.getByRole('button', { name: 'TRUSTED' }));
+      expect(screen.getByText('Secure Web Gateway')).toBeInTheDocument();
+      expect(screen.queryByText('Compromised Host')).not.toBeInTheDocument();
+
+      // Filter back to ALL
+      fireEvent.click(screen.getByRole('button', { name: 'ALL' }));
+      expect(screen.getByText('Secure Web Gateway')).toBeInTheDocument();
+      expect(screen.getByText('Compromised Host')).toBeInTheDocument();
+    });
+
+    it('9. Existing Zero Trust controls: anomaly investigation and resolution workflow intact', async () => {
+      vi.mocked(zeroTrustApi.updateAnomalyStatus).mockResolvedValue({ status: 'RESOLVED' });
+
+      render(
+        <BrowserRouter>
+          <ZeroTrustPage />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/Behavioral & Zero-Day Alerts/)).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText(/Behavioral & Zero-Day Alerts/));
+
+      await waitFor(() => {
+        expect(screen.getByText('Investigate')).toBeInTheDocument();
+        expect(screen.getByText('Resolve')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Resolve'));
+
+      await waitFor(() => {
+        expect(zeroTrustApi.updateAnomalyStatus).toHaveBeenCalledWith('anom-1', 'RESOLVED');
+      });
+    });
+
+    it('10. Existing Zero Trust controls: response rollback execution workflow intact', async () => {
+      vi.mocked(zeroTrustApi.rollbackResponseAction).mockResolvedValue({ status: 'ROLLED_BACK' });
+
+      render(
+        <BrowserRouter>
+          <ZeroTrustPage />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/Automated Response Actions/)).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText(/Automated Response Actions/));
+
+      await waitFor(() => {
+        expect(screen.getByText('Rollback')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Rollback'));
+
+      await waitFor(() => {
+        expect(zeroTrustApi.rollbackResponseAction).toHaveBeenCalledWith('act-2');
+      });
     });
   });
 });

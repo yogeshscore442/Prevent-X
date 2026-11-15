@@ -37,6 +37,22 @@ audit_evidence = {
 }
 
 
+def get_admin_password() -> str:
+    """Retrieves administrator credential from environment or secure local storage."""
+    pwd = os.environ.get("PREVENTX_ADMIN_PASSWORD", "")
+    if pwd:
+        return pwd
+    cred_file = ROOT_DIR / ".admin_credential.local"
+    if cred_file.exists():
+        try:
+            for line in cred_file.read_text(encoding="utf-8").splitlines():
+                if line.startswith("PASSWORD="):
+                    return line.split("=", 1)[1].strip()
+        except Exception:
+            pass
+    return ""
+
+
 def get_len(val):
     if isinstance(val, list):
         return len(val)
@@ -93,9 +109,14 @@ def main():
 
         client.request = resilient_req
 
+        admin_pwd = get_admin_password()
+        if not admin_pwd:
+            print("[-] Authentication aborted: Administrator credential not found in PREVENTX_ADMIN_PASSWORD or .admin_credential.local")
+            return
+
         login_res = client.post(
             f"{BASE_URL}/auth/login",
-            json={"email": "admin@preventx.internal", "password": "AdminPasswordSecure2026!"}
+            json={"email": "admin@preventx.internal", "password": admin_pwd}
         )
         t_auth = (time.perf_counter() - t0) * 1000.0
         if login_res.status_code != 200:

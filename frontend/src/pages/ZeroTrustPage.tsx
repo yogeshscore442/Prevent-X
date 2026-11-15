@@ -31,6 +31,74 @@ import {
 } from '@/types/zeroTrust';
 import { zeroTrustApi } from '@/services/zeroTrustApi';
 
+export interface StructuredError {
+  code?: string;
+  message?: string;
+  detail?: string | { code?: string; message?: string };
+  [key: string]: any;
+}
+
+export type ErrorValue = string | StructuredError | null | undefined;
+
+/**
+ * Safely extracts a human-readable message string from string, structured error object,
+ * Error instance, null, or undefined without crashing React rendering.
+ */
+export const formatErrorMessage = (err: unknown): string => {
+  if (err == null) {
+    return '';
+  }
+  if (typeof err === 'string') {
+    return err;
+  }
+  if (typeof err === 'object') {
+    const obj = err as Record<string, any>;
+    // 1. Direct message property
+    if (obj.message != null && typeof obj.message !== 'object') {
+      const msg = String(obj.message).trim();
+      if (msg) return msg;
+    }
+    // 2. Direct detail property (string or primitive)
+    if (obj.detail != null && typeof obj.detail !== 'object') {
+      const det = String(obj.detail).trim();
+      if (det) return det;
+    }
+    // 3. Nested detail object { code, message }
+    if (typeof obj.detail === 'object' && obj.detail !== null) {
+      if (obj.detail.message != null && typeof obj.detail.message !== 'object') {
+        const msg = String(obj.detail.message).trim();
+        if (msg) return msg;
+      }
+      if (obj.detail.code != null && typeof obj.detail.code !== 'object') {
+        const cd = String(obj.detail.code).trim();
+        if (cd) return cd;
+      }
+    }
+    // 4. Direct code property
+    if (obj.code != null && typeof obj.code !== 'object') {
+      const cd = String(obj.code).trim();
+      if (cd) return cd;
+    }
+    // 5. Array of validation errors (e.g. FastAPI / Pydantic)
+    if (Array.isArray(obj)) {
+      const messages = obj
+        .map((item) => {
+          if (item == null) return '';
+          if (typeof item === 'string') return item;
+          if (typeof item === 'object') {
+            return item.msg || item.message || '';
+          }
+          return String(item);
+        })
+        .filter(Boolean);
+      if (messages.length > 0) {
+        return messages.join(', ');
+      }
+    }
+  }
+  return 'An unexpected error occurred.';
+};
+
 export const ZeroTrustPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'posture' | 'threat_intel' | 'anomalies' | 'responses'>('posture');
 
@@ -42,7 +110,7 @@ export const ZeroTrustPage: React.FC = () => {
   const [anomalies, setAnomalies] = useState<BehavioralAnomaly[]>([]);
   const [responseActions, setResponseActions] = useState<ResponseAction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorValue>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   // Filters
@@ -80,7 +148,7 @@ export const ZeroTrustPage: React.FC = () => {
       setAnomalies(Array.isArray(anomData) ? anomData : []);
       setResponseActions(Array.isArray(actData) ? actData : []);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to load Zero Trust telemetry.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Failed to load Zero Trust telemetry.');
       setAssessments([]);
       setThreatIndicators([]);
       setCorrelations([]);
@@ -98,7 +166,7 @@ export const ZeroTrustPage: React.FC = () => {
       setActionMessage('Zero Trust posture evaluation initiated.');
       await loadAllData();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Evaluation failed.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Evaluation failed.');
     } finally {
       setIsProcessingAction(false);
     }
@@ -108,10 +176,10 @@ export const ZeroTrustPage: React.FC = () => {
     setIsProcessingAction(true);
     try {
       const res = await zeroTrustApi.syncThreatFeed();
-      setActionMessage(res.message || 'Threat feeds synchronized.');
+      setActionMessage(res?.message || 'Threat feeds synchronized.');
       await loadAllData();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Threat sync failed.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Threat sync failed.');
     } finally {
       setIsProcessingAction(false);
     }
@@ -124,7 +192,7 @@ export const ZeroTrustPage: React.FC = () => {
       setActionMessage('Threat-to-asset correlation analysis completed.');
       await loadAllData();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Correlation failed.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Correlation failed.');
     } finally {
       setIsProcessingAction(false);
     }
@@ -137,7 +205,7 @@ export const ZeroTrustPage: React.FC = () => {
       setActionMessage('Behavioral anomaly detection scan completed.');
       await loadAllData();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Anomaly detection failed.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Anomaly detection failed.');
     } finally {
       setIsProcessingAction(false);
     }
@@ -150,7 +218,7 @@ export const ZeroTrustPage: React.FC = () => {
       setActionMessage('Response action approved by administrator.');
       await loadAllData();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Approval failed.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Approval failed.');
     } finally {
       setIsProcessingAction(false);
     }
@@ -163,7 +231,7 @@ export const ZeroTrustPage: React.FC = () => {
       setActionMessage('Response action rejected.');
       await loadAllData();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Rejection failed.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Rejection failed.');
     } finally {
       setIsProcessingAction(false);
     }
@@ -176,7 +244,7 @@ export const ZeroTrustPage: React.FC = () => {
       setActionMessage('Mitigation policy enforced successfully.');
       await loadAllData();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Execution failed.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Execution failed.');
     } finally {
       setIsProcessingAction(false);
     }
@@ -189,7 +257,7 @@ export const ZeroTrustPage: React.FC = () => {
       setActionMessage('Response action rolled back to baseline.');
       await loadAllData();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Rollback failed.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Rollback failed.');
     } finally {
       setIsProcessingAction(false);
     }
@@ -200,7 +268,7 @@ export const ZeroTrustPage: React.FC = () => {
       await zeroTrustApi.updateAnomalyStatus(anomalyId, status);
       await loadAllData();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Status update failed.');
+      setError(err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? 'Status update failed.');
     }
   };
 
@@ -345,7 +413,7 @@ export const ZeroTrustPage: React.FC = () => {
         <div className="mt-4 p-3.5 rounded-lg bg-indigo-950/80 border border-indigo-700/60 text-indigo-200 text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span>{actionMessage}</span>
+            <span>{formatErrorMessage(actionMessage)}</span>
           </div>
           <button onClick={() => setActionMessage(null)} className="text-slate-400 hover:text-white">
             <X className="w-4 h-4" />
@@ -357,7 +425,7 @@ export const ZeroTrustPage: React.FC = () => {
         <div className="mt-4 p-3.5 rounded-lg bg-rose-950/80 border border-rose-700/60 text-rose-200 text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{error}</span>
+            <span>{formatErrorMessage(error)}</span>
           </div>
           <button onClick={() => setError(null)} className="text-slate-400 hover:text-white">
             <X className="w-4 h-4" />
@@ -671,8 +739,8 @@ export const ZeroTrustPage: React.FC = () => {
                       <td className="px-4 py-3 text-xs">
                         <div className="flex flex-wrap gap-1">
                           {t.mitre_tactics?.slice(0, 2).map((tac) => (
-                            <span key={tac} className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">
-                              {tac}
+                            <span key={typeof tac === 'string' ? tac : JSON.stringify(tac)} className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">
+                              {typeof tac === 'string' ? tac : formatErrorMessage(tac)}
                             </span>
                           ))}
                         </div>
@@ -1032,7 +1100,7 @@ export const ZeroTrustPage: React.FC = () => {
                 {selectedAssessment.least_privilege_recommendations?.map((r, idx) => (
                   <li key={idx} className="flex items-start gap-2 p-2 rounded bg-slate-950 border border-slate-800">
                     <span className="text-indigo-400 font-bold shrink-0">•</span>
-                    <span>{r}</span>
+                    <span>{typeof r === 'string' ? r : formatErrorMessage(r)}</span>
                   </li>
                 ))}
               </ul>

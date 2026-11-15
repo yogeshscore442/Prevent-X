@@ -323,14 +323,14 @@ Here is a practical walkthrough of the end-to-end security workflow:
 
 ---
 
-## 🔑 Default Login Credentials
+## 🔑 Initial Administrator Provisioning & Access
 
 | Role | Email | Password | Access Level |
 | :--- | :--- | :--- | :--- |
-| **System Super Administrator** | `admin@preventx.internal` | `AdminPasswordSecure2026!` | Full global platform administration across all tenants |
-| **Demo Tenant Administrator** | `admin@alphafintech.in` | `AlphaAdminPass123!` | Complete tenant-level control (Asset management, patch deployment) |
+| **System Super Administrator** | `admin@preventx.internal` | Provisioned via `INITIAL_ADMIN_PASSWORD` or generated securely during initial bootstrap (`.admin_credential.local`) | Full global platform administration across all tenants |
+| **Demo Tenant Administrator** | `admin@alphafintech.in` | Provided in isolated test environment / tenant seed fixtures | Complete tenant-level control (Asset management, patch deployment) |
 
-> ⚠️ *Note: For production deployments, change these default passwords immediately in your `.env` file and via the user profile settings.*
+> ⚠️ *Security Best Practice: PREVENT-X generates cryptographically strong random credentials during initial bootstrap when no environment override is provided. Rotate administrator credentials regularly via the administrative CLI (`scripts/rotate_admin_credential.py`) or profile security settings.*
 
 ---
 
