@@ -211,9 +211,26 @@ try {
         $pgExe = Join-Path $Root "infrastructure\bin\postgres\bin\postgres.exe"
         $pgData = Join-Path $Root "data\pgdata"
         if (Test-Path $pgExe) {
+            # Clean stale postmaster.pid if process is not alive
+            $pgPidFile = Join-Path $pgData "postmaster.pid"
+            if (Test-Path $pgPidFile) {
+                $rawPid = (Get-Content $pgPidFile -TotalCount 1 -ErrorAction SilentlyContinue)
+                if ($rawPid) {
+                    $existingPid = 0
+                    [int]::TryParse($rawPid.Trim(), [ref]$existingPid) | Out-Null
+                    if ($existingPid -gt 0) {
+                        $p = Get-Process -Id $existingPid -ErrorAction SilentlyContinue
+                        if (-not $p) {
+                            Remove-Item $pgPidFile -Force -ErrorAction SilentlyContinue
+                            Log-Message "  [*] Purged stale postmaster.pid (PID $existingPid was dead)." "Gray" "POSTGRES"
+                        }
+                    }
+                }
+            }
+
             Log-Message "  [*] Starting embedded PostgreSQL server..." "Gray" "POSTGRES"
-            $pgPid = Start-IndependentProcess -CommandLine "`"$pgExe`" -D `"$pgData`" -p 54320" -WorkingDirectory $Root
-            $pidsData["postgres"] = $pgPid
+            $pgProc = Start-Process "$pgExe" -ArgumentList "-D", "$pgData", "-p", "54320" -WindowStyle Hidden -PassThru
+            $pidsData["postgres"] = $pgProc.Id
         } else {
             Log-Message "  [!] Embedded postgres.exe not found. Assuming external instance on 54320." "Yellow" "POSTGRES"
         }
@@ -235,7 +252,7 @@ try {
     for ($i = 0; $i -lt 25; $i++) {
         $dbCheckErr = & $pythonExe -c "import psycopg2, sys;
 try:
-    conn = psycopg2.connect('postgresql://preventx_user:preventx_secure_pass@localhost:54320/preventx_db', connect_timeout=2)
+    conn = psycopg2.connect('postgresql://preventx_user:preventx_secure_pass@127.0.0.1:54320/preventx_db', connect_timeout=2)
     cur = conn.cursor()
     cur.execute('SELECT 1')
     conn.close()
@@ -276,8 +293,8 @@ except Exception as e:
         $redisExe = Join-Path $Root "infrastructure\bin\redis\redis-server.exe"
         if (Test-Path $redisExe) {
             Log-Message "  [*] Starting embedded Redis server on port 6379..." "Gray" "REDIS"
-            $redisPid = Start-IndependentProcess -CommandLine "`"$redisExe`" --port 6379" -WorkingDirectory "$Root\infrastructure\bin\redis"
-            $pidsData["redis"] = $redisPid
+            $rProc = Start-Process "$redisExe" -ArgumentList "--port", "6379" -WorkingDirectory "$Root\infrastructure\bin\redis" -WindowStyle Hidden -PassThru
+            $pidsData["redis"] = $rProc.Id
         } else {
             Log-Message "  [!] Embedded redis-server.exe not found. Assuming external instance." "Yellow" "REDIS"
         }
@@ -367,7 +384,7 @@ except Exception:
     $nginxOpen = Test-PortOpen -Port 8085
     if (-not $nginxOpen) {
         Log-Message "  [*] Launching native Nginx daemon on port 8085..." "Gray" "NGINX"
-        $nginxPid = Start-IndependentProcess -CommandLine "`"$nginxExe`" -p `"$nginxDir`" -c `"$nginxConf`"" -WorkingDirectory $nginxDir
+        $nginxPid = Start-IndependentProcess -CommandLine "`"$nginxExe`" -c `"$nginxConf`"" -WorkingDirectory $nginxDir
         $nginxReady = Wait-For-Port -Port 8085 -TimeoutSeconds 10 -ServiceName "Nginx"
         if (-not $nginxReady) {
             Log-Message "  [-] FATAL: Nginx failed to bind port 8085 within 10 seconds." "Red" "ERROR"
