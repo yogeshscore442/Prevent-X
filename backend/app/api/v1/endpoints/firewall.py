@@ -62,16 +62,20 @@ def get_firewall_status(
         )
     ).scalars().all()
 
-    verified_count = sum(1 for r in rules if r.verified_active)
+    verified_count = sum(
+        1 for r in rules if r.verified_active and r.enforcement_status == FirewallEnforcementStatus.VERIFIED
+    )
     failed_count = sum(1 for r in rules if r.enforcement_status == FirewallEnforcementStatus.FAILED)
+    pending_count = sum(1 for r in rules if r.enforcement_status == FirewallEnforcementStatus.PENDING)
     managed_os = windows_firewall_service.executor.list_preventx_rules()
 
     return FirewallStatusResponse(
         os_type=windows_firewall_service.executor.os_type,
         is_elevated=windows_firewall_service.executor.is_elevated_admin(),
-        active_rules_count=len(rules),
+        active_rules_count=verified_count,
         verified_rules_count=verified_count,
         failed_rules_count=failed_count,
+        pending_rules_count=pending_count,
         managed_os_rules=managed_os,
     )
 
@@ -202,8 +206,10 @@ def rollback_firewall_rule(
     """
     try:
         return windows_firewall_service.rollback_rule(db, rule_id, org.id, user.id)
+    except KeyError as ex:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ex).strip("'"))
     except ValueError as ex:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ex))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ex))
 
 
 @router.delete(
@@ -222,5 +228,7 @@ def delete_firewall_rule(
     """
     try:
         return windows_firewall_service.remove_rule(db, rule_id, org.id, user.id)
+    except KeyError as ex:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ex).strip("'"))
     except ValueError as ex:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ex))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ex))

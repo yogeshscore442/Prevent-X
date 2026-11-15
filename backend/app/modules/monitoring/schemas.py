@@ -4,11 +4,12 @@ Declares Pydantic request and response schemas for real-time security events,
 correlated incidents, SSE streams, alerts, and retention policies.
 """
 
+import json
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.app.models.monitoring import (
     AlertCategory,
@@ -106,6 +107,16 @@ class IncidentTimelineEntryRead(BaseModel):
     actor_user_id: Optional[uuid.UUID] = None
     created_at: datetime
 
+    @field_validator("evidence_data", mode="before")
+    @classmethod
+    def _coerce_string_evidence_data(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return None
+        return v
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -163,6 +174,16 @@ class SecurityIncidentRead(BaseModel):
     closed_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("iocs", mode="before")
+    @classmethod
+    def _coerce_string_iocs(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return None
+        return v
 
     model_config = ConfigDict(from_attributes=True)
 

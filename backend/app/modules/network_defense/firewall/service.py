@@ -84,7 +84,7 @@ class WindowsFirewallService:
         # 2. Normalize and validate IP/CIDR
         normalized_ip = self.executor.validate_ip_or_cidr(remote_ip_or_cidr)
 
-        # 3. Prevent duplicate active rule for the same scope and tenant
+        # 3. Prevent duplicate active verified rule for the same scope and tenant
         existing = db.execute(
             select(FirewallRule).where(
                 and_(
@@ -93,6 +93,7 @@ class WindowsFirewallService:
                     FirewallRule.direction == direction,
                     FirewallRule.action == action,
                     FirewallRule.is_active == True,
+                    FirewallRule.enforcement_status == FirewallEnforcementStatus.VERIFIED,
                 )
             )
         ).scalar_one_or_none()
@@ -199,7 +200,12 @@ class WindowsFirewallService:
 
     def rollback_rule(self, db: Session, rule_id: str, organization_id: uuid.UUID, user_id: Optional[uuid.UUID] = None) -> FirewallRule:
         """
-        Rolls back / deletes the firewall rule from Windows Defender Firewall.
+        Rolls back / deletes the firewall rule:
+        - If verified active in OS, genuinely removes it from Windows Defender Firewall.
+        - If removal succeeds, records SUCCESS audit with 'OS rule successfully removed'.
+        - If already absent from OS, records SUCCESS audit with 'OS rule already absent'.
+        - If never active in OS (e.g. FAILED creation), performs database-only cleanup with 'Database-only cleanup completed'.
+        - If OS removal fails, records FAILED audit with 'OS removal failed' and raises ValueError without marking ROLLED_BACK.
         """
         rule = db.execute(
             select(FirewallRule).where(
@@ -207,33 +213,86 @@ class WindowsFirewallService:
             )
         ).scalar_one_or_none()
         if not rule:
-            raise ValueError(f"Firewall rule '{rule_id}' not found.")
+            raise KeyError(f"Firewall rule '{rule_id}' not found.")
 
-        # Remove from Windows Defender Firewall
+        # Check if the rule actually exists in the OS firewall table
+        is_os_present, _ = self.executor.verify_rule_exists(rule.name)
+
+        if not is_os_present:
+            # Rule is not in the OS firewall table
+            was_verified = rule.verified_active
+            rule.is_active = False
+            rule.verified_active = False
+            rule.enforcement_status = FirewallEnforcementStatus.ROLLED_BACK
+            rule.error_message = None
+
+            audit_details = (
+                f"OS rule '{rule.name}' was already absent from Windows Defender Firewall. Database record marked rolled back."
+                if was_verified
+                else f"Database-only cleanup completed for un-enforced rule '{rule.name}'. No OS firewall rule was active."
+            )
+            audit = AuditEvent(
+                organization_id=organization_id,
+                user_id=user_id,
+                action="firewall_rule_rollback",
+                resource_type="firewall_rule",
+                resource_id=rule.id,
+                status="SUCCESS",
+                details=audit_details,
+            )
+            db.add(audit)
+            db.commit()
+            db.refresh(rule)
+            return rule
+
+        # OS rule is present; execute deletion
         del_res = self.executor.delete_rule(rule.name)
 
-        rule.is_active = False
-        rule.verified_active = False
-        rule.enforcement_status = FirewallEnforcementStatus.ROLLED_BACK
-        rule.error_message = del_res.error_message
+        if del_res.success:
+            rule.is_active = False
+            rule.verified_active = False
+            rule.enforcement_status = FirewallEnforcementStatus.ROLLED_BACK
+            rule.error_message = None
 
-        audit = AuditEvent(
-            organization_id=organization_id,
-            user_id=user_id,
-            action="firewall_rule_rollback",
-            resource_type="firewall_rule",
-            resource_id=rule.id,
-            status="SUCCESS" if del_res.success else "FAILED",
-            details=f"Rolled back rule '{rule.name}'. Output: {del_res.stdout}. Error: {del_res.error_message}",
-        )
-        db.add(audit)
-        db.commit()
-        db.refresh(rule)
-        return rule
+            audit_details = (
+                f"OS rule '{rule.name}' was already absent from Windows Defender Firewall."
+                if "no rules match" in (del_res.stdout + del_res.stderr).lower()
+                else f"OS rule '{rule.name}' successfully removed from Windows Defender Firewall."
+            )
+            audit = AuditEvent(
+                organization_id=organization_id,
+                user_id=user_id,
+                action="firewall_rule_rollback",
+                resource_type="firewall_rule",
+                resource_id=rule.id,
+                status="SUCCESS",
+                details=audit_details,
+            )
+            db.add(audit)
+            db.commit()
+            db.refresh(rule)
+            return rule
+        else:
+            # OS removal failed - do not mark as rolled back!
+            err_msg = del_res.error_message or del_res.stderr or "OS firewall deletion failed."
+            rule.error_message = f"OS removal failed: {err_msg}"
+            audit = AuditEvent(
+                organization_id=organization_id,
+                user_id=user_id,
+                action="firewall_rule_rollback",
+                resource_type="firewall_rule",
+                resource_id=rule.id,
+                status="FAILED",
+                details=f"OS removal failed for rule '{rule.name}': {err_msg}. Rule remains in OS firewall.",
+            )
+            db.add(audit)
+            db.commit()
+            db.refresh(rule)
+            raise ValueError(f"OS removal failed for rule '{rule.name}': {err_msg}")
 
     def remove_rule(self, db: Session, rule_id: str, organization_id: uuid.UUID, user_id: Optional[uuid.UUID] = None) -> FirewallRule:
         """
-        Permanently deactivates and removes rule.
+        Permanently deactivates and removes rule with authentic OS removal verification.
         """
         rule = db.execute(
             select(FirewallRule).where(
@@ -241,28 +300,78 @@ class WindowsFirewallService:
             )
         ).scalar_one_or_none()
         if not rule:
-            raise ValueError(f"Firewall rule '{rule_id}' not found.")
+            raise KeyError(f"Firewall rule '{rule_id}' not found.")
+
+        is_os_present, _ = self.executor.verify_rule_exists(rule.name)
+
+        if not is_os_present:
+            was_verified = rule.verified_active
+            rule.is_active = False
+            rule.verified_active = False
+            rule.enforcement_status = FirewallEnforcementStatus.REMOVED
+            rule.error_message = None
+
+            audit_details = (
+                f"OS rule '{rule.name}' was already absent from Windows Defender Firewall."
+                if was_verified
+                else f"Database-only cleanup completed for un-enforced rule '{rule.name}'. No OS firewall rule was active."
+            )
+            audit = AuditEvent(
+                organization_id=organization_id,
+                user_id=user_id,
+                action="firewall_rule_delete",
+                resource_type="firewall_rule",
+                resource_id=rule.id,
+                status="SUCCESS",
+                details=audit_details,
+            )
+            db.add(audit)
+            db.commit()
+            db.refresh(rule)
+            return rule
 
         del_res = self.executor.delete_rule(rule.name)
 
-        rule.is_active = False
-        rule.verified_active = False
-        rule.enforcement_status = FirewallEnforcementStatus.REMOVED
-        rule.error_message = del_res.error_message
+        if del_res.success:
+            rule.is_active = False
+            rule.verified_active = False
+            rule.enforcement_status = FirewallEnforcementStatus.REMOVED
+            rule.error_message = None
 
-        audit = AuditEvent(
-            organization_id=organization_id,
-            user_id=user_id,
-            action="firewall_rule_delete",
-            resource_type="firewall_rule",
-            resource_id=rule.id,
-            status="SUCCESS" if del_res.success else "FAILED",
-            details=f"Deleted rule '{rule.name}' for {rule.remote_ip_or_cidr}.",
-        )
-        db.add(audit)
-        db.commit()
-        db.refresh(rule)
-        return rule
+            audit_details = (
+                f"OS rule '{rule.name}' was already absent from Windows Defender Firewall."
+                if "no rules match" in (del_res.stdout + del_res.stderr).lower()
+                else f"OS rule '{rule.name}' successfully removed from Windows Defender Firewall."
+            )
+            audit = AuditEvent(
+                organization_id=organization_id,
+                user_id=user_id,
+                action="firewall_rule_delete",
+                resource_type="firewall_rule",
+                resource_id=rule.id,
+                status="SUCCESS",
+                details=audit_details,
+            )
+            db.add(audit)
+            db.commit()
+            db.refresh(rule)
+            return rule
+        else:
+            err_msg = del_res.error_message or del_res.stderr or "OS firewall deletion failed."
+            rule.error_message = f"OS removal failed: {err_msg}"
+            audit = AuditEvent(
+                organization_id=organization_id,
+                user_id=user_id,
+                action="firewall_rule_delete",
+                resource_type="firewall_rule",
+                resource_id=rule.id,
+                status="FAILED",
+                details=f"OS removal failed for rule '{rule.name}': {err_msg}. Rule remains in OS firewall.",
+            )
+            db.add(audit)
+            db.commit()
+            db.refresh(rule)
+            raise ValueError(f"OS removal failed for rule '{rule.name}': {err_msg}")
 
     def clean_expired_rules(self, db: Session) -> int:
         """

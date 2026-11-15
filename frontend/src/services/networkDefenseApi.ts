@@ -17,6 +17,7 @@ import {
   MLClassificationResult,
   MLModelStatus,
   NormalizationResult,
+  RateLimitEvaluationResult,
   RateLimitPolicy,
   TrafficReplayReport,
 } from '@/types/networkDefense';
@@ -83,8 +84,11 @@ export const networkDefenseApi = {
     const res = await api.post('/network-defense/rate-limiting/policies', payload);
     return res.data;
   },
-  testRateLimit: async (client_ip: string, path: string): Promise<any> => {
-    const res = await api.post('/network-defense/rate-limiting/test', { client_ip, path });
+  deleteRateLimitPolicy: async (policyId: string): Promise<void> => {
+    await api.delete(`/network-defense/rate-limiting/policies/${policyId}`);
+  },
+  testRateLimit: async (client_ip: string, path: string): Promise<RateLimitEvaluationResult> => {
+    const res = await api.post('/network-defense/rate-limiting/evaluate', { client_ip, path });
     return res.data;
   },
 

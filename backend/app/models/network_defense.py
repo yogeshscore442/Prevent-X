@@ -100,6 +100,26 @@ class FirewallRule(Base, TimestampMixin):
         nullable=True,
     )
 
+    @property
+    def is_os_enforced(self) -> bool:
+        """
+        Actual operating-system enforcement state.
+        True ONLY when authentic OS kernel query confirmed the rule is active in the firewall table.
+        Distinguishes actual OS packet blocking from logical policy enablement (is_active).
+        """
+        return bool(self.verified_active and self.enforcement_status == FirewallEnforcementStatus.VERIFIED)
+
+    @property
+    def is_logical_enabled(self) -> bool:
+        """
+        Logical policy state.
+        True if the policy is enabled in PREVENT-X configuration and not rolled back or removed.
+        """
+        return bool(self.is_active and self.enforcement_status not in (
+            FirewallEnforcementStatus.ROLLED_BACK,
+            FirewallEnforcementStatus.REMOVED,
+        ))
+
     __table_args__ = (
         Index("ix_fw_org_status", "organization_id", "enforcement_status"),
         Index("ix_fw_org_remote", "organization_id", "remote_ip_or_cidr"),

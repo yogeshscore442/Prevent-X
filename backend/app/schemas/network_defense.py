@@ -15,7 +15,7 @@ Defines request and response validation contracts for all network defense capabi
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from backend.app.models.network_defense import (
     DynamicIPBlockStatus,
@@ -65,6 +65,21 @@ class FirewallRuleResponse(BaseModel):
     last_verified_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+
+    @computed_field
+    @property
+    def is_os_enforced(self) -> bool:
+        """Actual OS packet filtering confirmed active by kernel."""
+        return bool(self.verified_active and self.enforcement_status == FirewallEnforcementStatus.VERIFIED)
+
+    @computed_field
+    @property
+    def is_logical_enabled(self) -> bool:
+        """Logical policy enablement in database."""
+        return bool(self.is_active and self.enforcement_status not in (
+            FirewallEnforcementStatus.ROLLED_BACK,
+            FirewallEnforcementStatus.REMOVED,
+        ))
 
     model_config = ConfigDict(from_attributes=True)
 

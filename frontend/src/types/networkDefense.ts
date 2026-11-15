@@ -20,6 +20,8 @@ export interface FirewallRule {
   remote_ports?: string | null;
   is_active: boolean;
   verified_active: boolean;
+  is_os_enforced?: boolean;
+  is_logical_enabled?: boolean;
   enforcement_status: FirewallEnforcementStatus;
   error_message?: string | null;
   expires_at?: string | null;
@@ -76,6 +78,15 @@ export interface RateLimitPolicy {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface RateLimitEvaluationResult {
+  allowed: boolean;
+  remaining: number;
+  retry_after: number;
+  limit: number;
+  scope: RateLimitScope;
+  algorithm: RateLimitAlgorithm;
 }
 
 export interface NormalizationResult {

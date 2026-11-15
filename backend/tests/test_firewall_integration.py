@@ -10,6 +10,7 @@ import uuid
 import pytest
 from unittest.mock import MagicMock, patch
 
+from backend.app.models.audit_log import AuditEvent
 from backend.app.models.network_defense import (
     FirewallEnforcementStatus,
     FirewallRule,
@@ -221,3 +222,322 @@ def test_firewall_api_endpoints_and_tenant_isolation(client, db_session, test_te
     )
     assert rollback_res.status_code == 200
     assert rollback_res.json()["enforcement_status"] == "ROLLED_BACK"
+
+
+# ==============================================================================
+# Enforcement State Integrity & Accurate Audit Regression Tests (Issues 1 & 2)
+# ==============================================================================
+
+def test_failed_os_rule_creation_integrity(db_session, test_tenants):
+    """
+    1. Failed OS rule creation:
+    Verifies that when OS rule creation fails (e.g. elevation missing),
+    the record has verified_active=False, is_os_enforced=False, enforcement_status=FAILED,
+    and audit log records status=FAILED with error details.
+    """
+    org_a = test_tenants["org_a"]
+    admin_a = test_tenants["admin_a"]
+
+    mock_fail_result = FirewallExecutionResult(
+        success=False,
+        verified=False,
+        command=["netsh", "advfirewall", "add"],
+        stdout="",
+        stderr="The requested operation requires elevation (Run as administrator).",
+        return_code=1,
+        error_message="Windows Firewall operation requires administrative elevation.",
+        is_elevated=False,
+    )
+
+    with patch.object(windows_firewall_service.executor, "add_rule", return_value=mock_fail_result):
+        rule = windows_firewall_service.create_firewall_rule(
+            db=db_session,
+            organization_id=org_a.id,
+            remote_ip_or_cidr="198.51.100.150",
+            display_name="Block Failed Test Host",
+            direction=FirewallRuleDirection.OUTBOUND,
+            action=FirewallRuleAction.BLOCK,
+            user_id=admin_a.id,
+        )
+
+        assert rule.verified_active is False
+        assert rule.is_os_enforced is False
+        assert rule.enforcement_status == FirewallEnforcementStatus.FAILED
+        assert "elevation" in (rule.error_message or "").lower()
+
+        # Audit log verification
+        audit = (
+            db_session.query(AuditEvent)
+            .filter_by(resource_id=rule.id, action="firewall_rule_create")
+            .order_by(AuditEvent.created_at.desc())
+            .first()
+        )
+        assert audit is not None
+        assert audit.status == "FAILED"
+        assert "elevation" in audit.details.lower()
+
+
+def test_successful_os_rule_creation_and_verification(db_session, test_tenants):
+    """
+    2. Successful OS rule creation and verification:
+    Verifies that when OS rule creation and verification succeed,
+    verified_active=True, is_os_enforced=True, enforcement_status=VERIFIED,
+    and audit log records status=SUCCESS.
+    """
+    org_a = test_tenants["org_a"]
+    admin_a = test_tenants["admin_a"]
+
+    mock_success_result = FirewallExecutionResult(
+        success=True,
+        verified=True,
+        command=["netsh", "advfirewall", "add"],
+        stdout="Ok.",
+        stderr="",
+        return_code=0,
+        is_elevated=True,
+    )
+
+    with patch.object(windows_firewall_service.executor, "add_rule", return_value=mock_success_result):
+        rule = windows_firewall_service.create_firewall_rule(
+            db=db_session,
+            organization_id=org_a.id,
+            remote_ip_or_cidr="198.51.100.151",
+            display_name="Block Active Verified Host",
+            direction=FirewallRuleDirection.INBOUND,
+            action=FirewallRuleAction.BLOCK,
+            user_id=admin_a.id,
+        )
+
+        assert rule.verified_active is True
+        assert rule.is_os_enforced is True
+        assert rule.is_active is True
+        assert rule.enforcement_status == FirewallEnforcementStatus.VERIFIED
+        assert rule.error_message is None
+
+        audit = (
+            db_session.query(AuditEvent)
+            .filter_by(resource_id=rule.id, action="firewall_rule_create")
+            .order_by(AuditEvent.created_at.desc())
+            .first()
+        )
+        assert audit is not None
+        assert audit.status == "SUCCESS"
+        assert "Verified: True" in audit.details
+
+
+def test_failed_os_rollback_integrity(db_session, test_tenants):
+    """
+    3. Failed OS rollback:
+    Verifies that when an active OS rule fails deletion (e.g. elevation missing),
+    rollback reports failure, audit status is FAILED with 'OS removal failed',
+    and the database record is NOT falsely marked as ROLLED_BACK.
+    """
+    org_a = test_tenants["org_a"]
+    admin_a = test_tenants["admin_a"]
+
+    # Pre-create verified active rule
+    rule = FirewallRule(
+        organization_id=org_a.id,
+        name="PX_TEST_ACTIVE_DEL_FAIL",
+        display_name="Active Rule Delete Fail",
+        remote_ip_or_cidr="198.51.100.152/32",
+        direction=FirewallRuleDirection.INBOUND,
+        action=FirewallRuleAction.BLOCK,
+        protocol=FirewallRuleProtocol.ANY,
+        is_active=True,
+        verified_active=True,
+        enforcement_status=FirewallEnforcementStatus.VERIFIED,
+    )
+    db_session.add(rule)
+    db_session.flush()
+
+    mock_del_fail = FirewallExecutionResult(
+        success=False,
+        verified=True,
+        command=["netsh", "advfirewall", "delete"],
+        stdout="",
+        stderr="The requested operation requires elevation.",
+        return_code=1,
+        error_message="The requested operation requires elevation.",
+        is_elevated=False,
+    )
+
+    with patch.object(windows_firewall_service.executor, "verify_rule_exists", return_value=(True, "Rule exists in OS")), \
+         patch.object(windows_firewall_service.executor, "delete_rule", return_value=mock_del_fail):
+
+        with pytest.raises(ValueError, match="OS removal failed"):
+            windows_firewall_service.rollback_rule(
+                db=db_session,
+                rule_id=rule.id,
+                organization_id=org_a.id,
+                user_id=admin_a.id,
+            )
+
+        db_session.refresh(rule)
+        # CRITICAL: Record must NOT be marked ROLLED_BACK if OS removal failed!
+        assert rule.enforcement_status == FirewallEnforcementStatus.VERIFIED
+        assert rule.verified_active is True
+        assert "OS removal failed" in (rule.error_message or "")
+
+        # Audit log must accurately state FAILED and OS removal failed
+        audit = (
+            db_session.query(AuditEvent)
+            .filter_by(resource_id=rule.id, action="firewall_rule_rollback")
+            .order_by(AuditEvent.created_at.desc())
+            .first()
+        )
+        assert audit is not None
+        assert audit.status == "FAILED"
+        assert "OS removal failed" in audit.details
+
+
+def test_successful_os_rollback_integrity(db_session, test_tenants):
+    """
+    4. Successful OS rollback:
+    Verifies that when a verified active rule is deleted from OS,
+    verified_active=False, is_os_enforced=False, enforcement_status=ROLLED_BACK,
+    and audit log records SUCCESS with 'OS rule successfully removed'.
+    """
+    org_a = test_tenants["org_a"]
+    admin_a = test_tenants["admin_a"]
+
+    rule = FirewallRule(
+        organization_id=org_a.id,
+        name="PX_TEST_ACTIVE_DEL_OK",
+        display_name="Active Rule Delete OK",
+        remote_ip_or_cidr="198.51.100.153/32",
+        direction=FirewallRuleDirection.INBOUND,
+        action=FirewallRuleAction.BLOCK,
+        protocol=FirewallRuleProtocol.ANY,
+        is_active=True,
+        verified_active=True,
+        enforcement_status=FirewallEnforcementStatus.VERIFIED,
+    )
+    db_session.add(rule)
+    db_session.flush()
+
+    mock_del_ok = FirewallExecutionResult(
+        success=True,
+        verified=False,
+        command=["netsh", "advfirewall", "delete"],
+        stdout="Deleted 1 rule(s). Ok.",
+        stderr="",
+        return_code=0,
+        is_elevated=True,
+    )
+
+    with patch.object(windows_firewall_service.executor, "verify_rule_exists", return_value=(True, "Rule exists in OS")), \
+         patch.object(windows_firewall_service.executor, "delete_rule", return_value=mock_del_ok):
+
+        rolled_back = windows_firewall_service.rollback_rule(
+            db=db_session,
+            rule_id=rule.id,
+            organization_id=org_a.id,
+            user_id=admin_a.id,
+        )
+
+        assert rolled_back.is_active is False
+        assert rolled_back.verified_active is False
+        assert rolled_back.is_os_enforced is False
+        assert rolled_back.enforcement_status == FirewallEnforcementStatus.ROLLED_BACK
+
+        audit = (
+            db_session.query(AuditEvent)
+            .filter_by(resource_id=rule.id, action="firewall_rule_rollback")
+            .order_by(AuditEvent.created_at.desc())
+            .first()
+        )
+        assert audit is not None
+        assert audit.status == "SUCCESS"
+        assert "successfully removed" in audit.details
+        assert "OS rule" in audit.details
+
+
+def test_database_only_cleanup_when_no_os_rule_exists(db_session, test_tenants):
+    """
+    5. Database-only cleanup when no OS rule exists:
+    Tests two subcases:
+    a) Un-enforced failed rule: rollback performs database cleanup, audit status=SUCCESS with 'Database-only cleanup completed'.
+    b) Previously active rule already absent in OS: rollback transitions DB, audit status=SUCCESS with 'OS rule was already absent'.
+    """
+    org_a = test_tenants["org_a"]
+    admin_a = test_tenants["admin_a"]
+
+    # Subcase A: Rule failed creation (never in OS)
+    failed_rule = FirewallRule(
+        organization_id=org_a.id,
+        name="PX_TEST_FAILED_NO_OS",
+        display_name="Failed Un-enforced Rule",
+        remote_ip_or_cidr="198.51.100.154/32",
+        direction=FirewallRuleDirection.INBOUND,
+        action=FirewallRuleAction.BLOCK,
+        protocol=FirewallRuleProtocol.ANY,
+        is_active=True,
+        verified_active=False,
+        enforcement_status=FirewallEnforcementStatus.FAILED,
+        error_message="Elevation required.",
+    )
+    db_session.add(failed_rule)
+    db_session.flush()
+
+    with patch.object(windows_firewall_service.executor, "verify_rule_exists", return_value=(False, "No matching rule")):
+        cleaned_rule = windows_firewall_service.rollback_rule(
+            db=db_session,
+            rule_id=failed_rule.id,
+            organization_id=org_a.id,
+            user_id=admin_a.id,
+        )
+
+        assert cleaned_rule.is_active is False
+        assert cleaned_rule.verified_active is False
+        assert cleaned_rule.is_os_enforced is False
+        assert cleaned_rule.enforcement_status == FirewallEnforcementStatus.ROLLED_BACK
+
+        audit_a = (
+            db_session.query(AuditEvent)
+            .filter_by(resource_id=failed_rule.id, action="firewall_rule_rollback")
+            .order_by(AuditEvent.created_at.desc())
+            .first()
+        )
+        assert audit_a is not None
+        assert audit_a.status == "SUCCESS"
+        assert "Database-only cleanup completed" in audit_a.details
+
+    # Subcase B: Rule was marked verified_active, but OS query shows it's already gone
+    absent_rule = FirewallRule(
+        organization_id=org_a.id,
+        name="PX_TEST_ALREADY_ABSENT_OS",
+        display_name="Already Absent Rule",
+        remote_ip_or_cidr="198.51.100.155/32",
+        direction=FirewallRuleDirection.INBOUND,
+        action=FirewallRuleAction.BLOCK,
+        protocol=FirewallRuleProtocol.ANY,
+        is_active=True,
+        verified_active=True,
+        enforcement_status=FirewallEnforcementStatus.VERIFIED,
+    )
+    db_session.add(absent_rule)
+    db_session.flush()
+
+    with patch.object(windows_firewall_service.executor, "verify_rule_exists", return_value=(False, "No matching rule")):
+        cleaned_absent = windows_firewall_service.rollback_rule(
+            db=db_session,
+            rule_id=absent_rule.id,
+            organization_id=org_a.id,
+            user_id=admin_a.id,
+        )
+
+        assert cleaned_absent.is_active is False
+        assert cleaned_absent.verified_active is False
+        assert cleaned_absent.enforcement_status == FirewallEnforcementStatus.ROLLED_BACK
+
+        audit_b = (
+            db_session.query(AuditEvent)
+            .filter_by(resource_id=absent_rule.id, action="firewall_rule_rollback")
+            .order_by(AuditEvent.created_at.desc())
+            .first()
+        )
+        assert audit_b is not None
+        assert audit_b.status == "SUCCESS"
+        assert "already absent" in audit_b.details.lower()
+

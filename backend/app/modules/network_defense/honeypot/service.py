@@ -202,7 +202,7 @@ class HoneypotService:
             recommended_action=f"Review host activity and enforce dynamic IP block on {source_ip}.",
             containment_action_taken=False,
             containment_requires_approval=True,
-            iocs=json.dumps({"ip": [source_ip], "trap_path": matched_trap or path}),
+            iocs={"ip": [source_ip], "trap_path": matched_trap or path},
         )
         db.add(incident)
         db.flush()
@@ -215,13 +215,15 @@ class HoneypotService:
             organization_id=organization_id,
             entry_type="HONEYPOT_TRAP_TRIGGERED",
             message=f"Host {source_ip} probed honeypot trap {matched_trap or path} using {method.upper()}.",
-            evidence_data=json.dumps({
+            evidence_data={
+                "probe_id": str(probe.id),
+                "trap_path": matched_trap or path,
                 "source_ip": source_ip,
                 "path": path,
                 "method": method,
                 "query": query_string,
                 "user_agent": user_agent,
-            }),
+            },
         )
         db.add(timeline)
 

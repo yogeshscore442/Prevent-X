@@ -1,6 +1,6 @@
-# PREVENT-X: Autonomous AI-Era Virtual Patching Platform
+# PREVENT-X: Autonomous AI-Era Virtual Patching & Network Defense Platform
 
-> **Real-time compensating cyber defense and zero-downtime virtual patching for digital enterprises and Indian SMBs.**
+> **Real-time compensating cyber defense, zero-downtime virtual patching, and active network defense for digital enterprises and Indian SMBs.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
@@ -10,6 +10,7 @@
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2016-336791.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Cache%20%26%20Broker-Redis%207-dc382d.svg)](https://redis.io/)
 [![Celery](https://img.shields.io/badge/Tasks-Celery%205-37814A.svg)](https://docs.celeryq.dev/)
+[![Tests](https://img.shields.io/badge/Tests-200%2B%20Passing-brightgreen.svg)](#-running-tests)
 
 ---
 
@@ -17,7 +18,9 @@
 
 1. [Overview](#-overview)
 2. [Why PREVENT-X?](#-why-prevent-x)
-3. [Key Capabilities & 12 Security Modules](#-key-capabilities--12-security-modules)
+3. [Key Capabilities](#-key-capabilities)
+   - [12 Core Security Modules (MOD-01 to MOD-12)](#-12-core-security-modules-mod-01-to-mod-12)
+   - [Advanced Network Defense Layer (9 Capabilities)](#-advanced-network-defense-layer-9-capabilities)
 4. [Architecture Flow](#-architecture-flow)
 5. [Tech Stack](#-tech-stack)
 6. [Prerequisites](#-prerequisites)
@@ -28,17 +31,20 @@
 11. [Running Tests](#-running-tests)
 12. [Project Structure](#-project-structure)
 13. [Troubleshooting & FAQs](#-troubleshooting--faqs)
-14. [License & Acknowledgments](#-license--acknowledgments)
+14. [Audit & Verification Reports](#-audit--verification-reports)
+15. [License & Acknowledgments](#-license--acknowledgments)
 
 ---
 
 ## 🌟 Overview
 
-**PREVENT-X** is an autonomous, tenant-isolated, zero-downtime cyber defense and virtual patching platform. 
+**PREVENT-X** is an autonomous, tenant-isolated, zero-downtime cyber defense, virtual patching, and network resilience platform.
 
 In today's digital landscape, Small and Medium Businesses (SMBs) face an asymmetric threat: automated vulnerability scanners and exploit kits attack internet-facing applications within hours of disclosure, while traditional source-code patching takes **45 to 90 days** due to development backlogs, legacy frameworks, and fear of downtime.
 
-**PREVENT-X solves this gap**: Instead of waiting weeks to rewrite application code, PREVENT-X synthesizes, tests, and deploys **compensating virtual patches** directly into an edge reverse proxy (such as Nginx) in seconds. Malicious exploit payloads (SQLi, XSS, Path Traversal, Command Injection) are intercepted and blocked at the perimeter without requiring any changes to the underlying application.
+**PREVENT-X solves this gap**: Instead of waiting weeks to rewrite application code, PREVENT-X synthesizes, tests, and deploys **compensating virtual patches** directly into an edge reverse proxy (such as Nginx) in seconds. Malicious exploit payloads (SQLi, XSS, Path Traversal, SSRF, Command Injection) are intercepted and blocked at the perimeter without requiring any changes to the underlying application.
+
+Furthermore, PREVENT-X features an **Advanced Network Defense & Detection Layer** inspired by enterprise-grade defense systems, providing host firewall orchestration, dynamic IP bans, sliding-window rate limiters, multi-pass payload decoders, decoy honeypots, offline GeoIP filtering, and explainable ML traffic classification.
 
 ---
 
@@ -48,14 +54,16 @@ In today's digital landscape, Small and Medium Businesses (SMBs) face an asymmet
 * 🛡️ **Zero Application Downtime**: Deploys hot configuration rules to the reverse proxy with zero restart disruption.
 * 🔍 **Evidence-Backed Attack Paths**: Visualizes multi-hop attack graphs (DAGs) linking external assets to internal crown jewels.
 * 🤖 **Autonomous Validation & Safe Rollback**: Validates patches in staging with non-destructive payloads and provides one-click atomic rollback backed by PostgreSQL advisory locks.
+* 🪤 **Honeypot Decoy Tripwires**: Lures reconnaissance bots to high-fidelity fake endpoints (`/wp-admin`, `/.env`) and logs immediate incident IOCs.
+* 🧱 **Host Firewall & Dynamic IP Bans**: Integrates with Windows Defender Firewall (`netsh`) and Redis TTL for automatic containment of malicious IPs.
 * 🔐 **Multi-Tenant & Role-Based**: Full data isolation per organization with granular RBAC permissions.
 * 🇮🇳 **Aligned with Indian Cybersecurity Standards**: Incorporates telemetry and incident logging practices aligned with CERT-In guidelines and DPDP technical safeguards.
 
 ---
 
-## 🧩 Key Capabilities & 12 Security Modules
+## 🧩 Key Capabilities
 
-PREVENT-X is built on a modular architecture divided into 12 core functional engines:
+### 🛡️ 12 Core Security Modules (MOD-01 to MOD-12)
 
 | Module ID | Module Name | What It Does |
 | :--- | :--- | :--- |
@@ -71,6 +79,22 @@ PREVENT-X is built on a modular architecture divided into 12 core functional eng
 | **MOD-10** | **Automated Security Validation** | Executes automated non-destructive test probes (SQLi, XSS, Path Traversal) to verify patch effectiveness before production deployment. |
 | **MOD-11** | **Response & Reliable Rollback** | Manages distributed deployment locks (PostgreSQL advisory locks) and provides instant SHA-256 verified rollback. |
 | **MOD-12** | **Centralized SMB Security Center** | Delivers an executive posture score (0–100), incident management, attack path visualization, and audit trails. |
+
+---
+
+### 🌐 Advanced Network Defense Layer (9 Capabilities)
+
+Accessible directly in the portal under **Network Defense** (`/network-defense`):
+
+1. **Windows Defender Firewall Integration**: Manages host firewall rules via `netsh.exe advfirewall firewall` with honest elevation reporting and loopback safety guards.
+2. **Dynamic IP Blocking**: Enforces temporary and permanent IP bans via Redis TTL, automated unblocking, and CIDR safety protections.
+3. **Advanced Rate Limiting**: Multi-dimensional token-bucket and sliding-window Redis ZSET rate limiters across IPs, endpoints, and tenant boundaries.
+4. **Multi-Pass Payload Normalization**: Recursive deobfuscator that decodes double URL encoding, hex escapes, unicode escapes, HTML entities, and base64 payloads to defeat WAF evasion techniques.
+5. **10 Advanced Threat Detectors**: Deep inspection for SSRF, XXE, SSTI, NoSQL Injection, LDAP Injection, Open Redirects, HTTP Request Smuggling, GraphQL abuse, Mass Assignment, and JWT tampering.
+6. **Traffic Replay & Differential Validation**: Replays benign and exploit traffic against candidate patches to ensure a **0% False Positive (FP) rate**.
+7. **Honeypot Decoy Tripwires**: Realistic tripwires (`/wp-admin/*`, `/.env`, `/id_rsa`) that capture reconnaissance probes and create instant security incidents.
+8. **Offline GeoIP Policy Engine**: Country-level traffic filtering with CIDR partner exceptions without requiring external network lookups.
+9. **Explainable ML Traffic Classifier**: 16-feature Random Forest ensemble operating in advisory mode with explainable feature importance scoring.
 
 ---
 
@@ -94,23 +118,24 @@ PREVENT-X is built on a modular architecture divided into 12 core functional eng
                  │                                (e.g. Payment Gateway)
                  ▼
      ┌─────────────────────────────────────────────────────────────┐
-     │                   PREVENT-X Core Engine                     │
+     │                   PREVENT-X Core Platform                   │
      │                                                             │
-     │  • FastAPI REST & SSE Services                              │
-     │  • Celery Workers & Redis Queue                             │
+     │  • FastAPI REST & SSE Services (Port 8002)                  │
+     │  • Celery Workers & Redis Broker (Port 6379)                │
      │  • Attack Surface Discovery (MOD-01)                        │
      │  • Vulnerability & Threat Mapping (MOD-02 & MOD-05)         │
      │  • Attack Path DAG Graph Engine (MOD-03)                    │
      │  • Zero Trust Policy Engine (MOD-04)                        │
      │  • Patch Synthesis & Staging Validator (MOD-08 & MOD-10)    │
+     │  • Network Defense & Detection Layer (AdvDef A-I)           │
      │  • Rollback & Distributed Locking (MOD-11)                  │
-     │  • PostgreSQL Multi-Tenant Database                         │
+     │  • PostgreSQL Multi-Tenant Database (Port 54320)            │
      └──────────────────────────────┬──────────────────────────────┘
                                     │
                                     ▼
                      ┌─────────────────────────────┐
                      │  React 18 Executive Portal  │
-                     │   (Dark Navy Cyber UI)      │
+                     │    http://localhost:5173    │
                      └─────────────────────────────┘
 ```
 
@@ -124,25 +149,24 @@ PREVENT-X is built on a modular architecture divided into 12 core functional eng
 * **ORM & Database**: SQLAlchemy 2.0 with PostgreSQL 16
 * **Database Migrations**: Alembic
 * **Task Queue & Cache**: Celery 5.x & Redis 7
-* **Security & Crypto**: Argon2id password hashing, PyJWT, Cryptography
+* **Security & Crypto**: Argon2id password hashing, PyJWT, Cryptography, socket-pinning
 
 ### **Frontend & Visualizations**
 * **Library**: React 18 with TypeScript 5
 * **Build Tool**: Vite
-* **Styling**: Tailwind CSS (Enterprise Dark Navy cybersecurity theme)
+* **Styling**: Tailwind CSS (Dark Navy cybersecurity theme)
 * **Routing**: React Router v6 with protected session guards
 * **Icons & UI**: Lucide React
 * **Graphs**: Interactive SVG & HTML5 Canvas DAG visualizer
 
 ### **Edge & Testing**
 * **Edge Proxy**: Nginx 1.26+
-* **Testing Suites**: Pytest (Backend unit & integration), Vitest & Testing Library (Frontend)
+* **Testing Suites**: Pytest (200+ tests), Vitest (50+ component tests)
 
 ---
 
 ## ⚙️ Prerequisites
 
-Before running PREVENT-X, ensure your machine has:
 1. **Python 3.10 or higher** ([Download Python](https://www.python.org/downloads/))
 2. **Node.js 18 or higher & npm** ([Download Node.js](https://nodejs.org/))
 3. **PostgreSQL 16** (or use the embedded/docker instance)
@@ -153,7 +177,7 @@ Before running PREVENT-X, ensure your machine has:
 
 ## 🚀 Quick Start (One-Click)
 
-On Windows, PREVENT-X includes automated launcher scripts that verify dependencies, run migrations, bootstrap admin accounts, and start all services in dedicated consoles.
+On Windows, PREVENT-X includes a single automated launcher batch script:
 
 ### 1. Clone the Repository
 ```bash
@@ -183,7 +207,8 @@ start.bat
 7. Starts Celery background workers.
 8. Starts the FastAPI backend on port `8002`.
 9. Starts the Vite frontend on port `5173`.
-10. Automatically launches `http://localhost:5173` in your browser!
+10. Displays your local URL and LAN/Wi-Fi network access URL.
+11. Automatically launches `http://localhost:5173` in your browser!
 
 ### 4. Stopping the Services
 To gracefully stop all background services, run:
@@ -220,7 +245,7 @@ cd ..
 python scripts/bootstrap_admin.py
 
 # 6. Start the API server
-uvicorn backend.app.main:app --host 127.0.0.1 --port 8002 --reload
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8002 --reload
 ```
 
 ### Step 2: Start Celery Worker
@@ -248,7 +273,7 @@ Here is a practical walkthrough of the end-to-end security workflow:
 ### Step 1: Sign In
 * Navigate to `http://localhost:5173`.
 * Enter the administrator credentials (see [Default Login Credentials](#-default-login-credentials)).
-* You will land on the **Executive Security Center** showing the overall organization Posture Score, active alerts, and incident trends.
+* You will land on the **Executive Security Center** showing the overall organization Posture Score (0–100), active alerts, and incident trends.
 
 ### Step 2: Register Digital Assets
 * Go to **Asset Management** (`/assets`).
@@ -280,11 +305,19 @@ Here is a practical walkthrough of the end-to-end security workflow:
 * Click **Deploy Patch**.
 * PREVENT-X acquires a distributed PostgreSQL lock, verifies Nginx configuration syntax with `nginx -t`, and reloads the proxy with zero downtime.
 
-### Step 8: Monitor Live Traffic & Real-Time Alerts
+### Step 8: Network Defense & Threat Countermeasures
+* Go to **Network Defense** (`/network-defense`).
+* **Firewall Rules**: Inspect Windows Defender host rules and active status.
+* **Dynamic IP Bans**: Review blocked threat IPs, trigger temporary bans, or approve analyst overrides.
+* **Payload Normalizer**: Test obfuscated payloads (e.g. double URL encoded, unicode escapes) to see them normalized in real time.
+* **Honeypot Decoys**: Inspect active decoy traps (`/.env`, `/wp-admin`) and live probe alerts.
+* **ML Classifier**: Run explainable anomaly classification on suspicious request parameters.
+
+### Step 9: Monitor Live Traffic & Real-Time Alerts
 * Go to **Monitoring** (`/monitoring`) and **Incidents**.
 * PREVENT-X streams live proxy event logs and alerts. When an attacker sends an exploit payload (e.g. `' OR '1'='1`), Nginx responds with `403 Forbidden`, and an alert is instantly broadcast to the dashboard.
 
-### Step 9: Atomic Rollback (If Ever Needed)
+### Step 10: Atomic Rollback (If Ever Needed)
 * If a patch needs to be revoked, click **Rollback Patch** in the Virtual Patching tab.
 * PREVENT-X reverts to the previous verified SHA-256 configuration snapshot in milliseconds.
 
@@ -303,26 +336,25 @@ Here is a practical walkthrough of the end-to-end security workflow:
 
 ## 🧪 Running Tests
 
-PREVENT-X features comprehensive automated test coverage for backend APIs, multi-tenant isolation, security validation, and frontend components.
+PREVENT-X features comprehensive automated test coverage across all layers.
 
-### 1. Run Backend Security & Integration Tests
+### 1. Run Complete Backend Test Suite (200 Tests)
 ```powershell
 .\.venv\Scripts\python.exe -m pytest backend/tests -v
 ```
-**Key test suites verified:**
-* `test_security.py`: Argon2id hashing, session token invalidation, and rate limiting.
-* `test_tenant_isolation.py`: Cross-tenant penetration tests ensuring complete data isolation.
-* `test_attack_surface.py`: Controlled discovery and socket-pinning safety.
-* `test_virtual_patching.py`: Patch synthesis, staging validation, and atomic rollback.
-* `test_end_to_end_security_workflow.py`: Comprehensive 17-step end-to-end integration test.
 
-### 2. Run Frontend Tests
+### 2. Run Firewall & Honeypot Tests Specifically
+```powershell
+.\.venv\Scripts\python.exe -m pytest backend/tests/test_firewall_integration.py backend/tests/test_honeypot_detection.py -v
+```
+
+### 3. Run Frontend Component Tests (53 Tests)
 ```bash
 cd frontend
 npm test
 ```
 
-### 3. Production Build Verification
+### 4. Production Build Verification
 ```bash
 cd frontend
 npm run build
@@ -339,7 +371,7 @@ PREVENT-X/
 │   ├── requirements.txt              # Pinned Python dependencies
 │   ├── app/
 │   │   ├── main.py                   # FastAPI application entrypoint
-│   │   ├── api/v1/                   # REST API routes (auth, assets, patches, etc.)
+│   │   ├── api/v1/                   # REST API routes (auth, assets, patches, firewall, etc.)
 │   │   ├── core/                     # Configuration settings, logging, exceptions
 │   │   ├── database/                 # SQLAlchemy database session & engine
 │   │   ├── models/                   # Database ORM entities
@@ -348,7 +380,7 @@ PREVENT-X/
 │   │   ├── services/                 # Core domain business logic
 │   │   ├── security/                 # Argon2id, JWT, and permission guards
 │   │   ├── workers/                  # Celery application and task definitions
-│   │   └── modules/                  # 12 Core Security Modules (MOD-01 to MOD-12)
+│   │   └── modules/                  # 12 Core Engines + Network Defense
 │   │       ├── attack_surface/       # MOD-01: Asset discovery & port scanning
 │   │       ├── vulnerability/        # MOD-02: CVE/CWE weakness mapping
 │   │       ├── attack_path/          # MOD-03: Attack graph traversal (DAG)
@@ -356,9 +388,18 @@ PREVENT-X/
 │   │       ├── virtual_patch/        # MOD-08: Nginx patch compiler
 │   │       ├── monitoring/           # MOD-09: Log ingestion & SSE streaming
 │   │       ├── security_validation/  # MOD-10: Automated staging validation
-│   │       └── ...
+│   │       └── network_defense/      # Advanced Network Defense Subsystem
+│   │           ├── firewall/         # Windows Defender netsh integration
+│   │           ├── blocking/         # Dynamic IP ban engine
+│   │           ├── rate_limiting/    # Sliding-window & token bucket limiter
+│   │           ├── normalization/    # Recursive multi-pass payload decoder
+│   │           ├── detection/        # 10 Advanced Threat Detectors (SSRF, XXE, etc.)
+│   │           ├── replay/           # Traffic replay & FP rate verification
+│   │           ├── honeypot/         # Decoy tripwire simulation & alerts
+│   │           ├── geoip/            # Offline GeoIP policy engine
+│   │           └── ml/               # 16-feature Random Forest classifier
 │   ├── migrations/                   # Database version migration scripts
-│   └── tests/                        # Comprehensive Pytest test suites
+│   └── tests/                        # Comprehensive Pytest test suites (200 tests)
 ├── frontend/
 │   ├── package.json                  # Frontend dependencies
 │   ├── vite.config.ts                # Vite bundler configuration & proxy
@@ -366,20 +407,22 @@ PREVENT-X/
 │   └── src/
 │       ├── main.tsx                  # React entrypoint
 │       ├── contexts/                 # AuthContext and tenant state
-│       ├── pages/                    # UI Pages (Dashboard, Assets, Patches, etc.)
+│       ├── pages/                    # UI Pages (Dashboard, Assets, Patches, Network Defense, etc.)
 │       ├── components/               # Reusable UI widgets and navigation
-│       ├── services/                 # Axios API client with CSRF protection
+│       ├── services/                 # Axios API clients with CSRF protection
 │       └── types/                    # TypeScript interfaces
 ├── docs/                             # Architecture diagrams, specifications & demo guide
 │   ├── DEMO_GUIDE.md                 # Step-by-step 15-minute evaluation guide
 │   ├── DEPLOYMENT_GUIDE.md           # Production deployment instructions
 │   └── PREVENT_X_FINAL_PROJECT_REPORT.md  # Comprehensive engineering report
+├── PREVENT_X_FULL_SYSTEM_INTEGRATION_AUDIT.md # Full project audit report
 ├── scripts/                          # Utility & automation scripts
 │   ├── bootstrap_admin.py            # Root admin initialization script
+│   ├── audit_execution.py            # Automated health & audit runner
 │   ├── run_backend.bat               # Backend startup script
 │   ├── run_frontend.bat              # Frontend startup script
 │   └── run_worker.bat                # Celery worker startup script
-├── start.bat                         # One-click Windows platform launcher
+├── start.bat                         # One-click Windows platform launcher (local + Wi-Fi)
 ├── start.ps1                         # PowerShell platform launcher
 ├── stop.bat                          # One-click platform shutdown
 ├── stop.ps1                          # PowerShell shutdown script
@@ -397,6 +440,9 @@ PREVENT-X/
 ### Q: Port 8000 or 8002 is already in use
 **Answer**: Run `stop.bat` to terminate any hanging background processes, or edit `BACKEND_PORT` inside `start.bat` (defaults to `8002`).
 
+### Q: Can other devices on my local network access PREVENT-X?
+**Answer**: Yes! When launched with `start.bat`, the script binds to `0.0.0.0` and prints your Wi-Fi/LAN IP address (e.g. `http://192.168.1.X:5173`) so team members or evaluators on the same network can access the portal directly.
+
 ### Q: Database connection error on startup
 **Answer**: Make sure PostgreSQL is running on port `54320` (as configured in `.env`). If you are running your own PostgreSQL instance on the default port `5432`, update `DATABASE_URL` in `.env`.
 
@@ -404,7 +450,15 @@ PREVENT-X/
 **Answer**: Ensure Redis is running on port `6379`. You can verify by executing `redis-cli ping` or running `start.bat`, which launches the embedded Redis service.
 
 ### Q: How are false positives prevented during virtual patching?
-**Answer**: PREVENT-X runs a staging validation suite (MOD-10) before any patch is deployed to production. Non-destructive probes test both malicious and legitimate benign traffic to ensure legitimate requests are never blocked.
+**Answer**: PREVENT-X runs both a staging validation suite (MOD-10) and differential traffic replay (AdvDef-F) before any patch is deployed to production. Non-destructive probes test both malicious and legitimate benign traffic to ensure legitimate requests are never blocked (0% FP rate).
+
+---
+
+## 📊 Audit & Verification Reports
+
+* **Full Integration Audit Report**: [PREVENT_X_FULL_SYSTEM_INTEGRATION_AUDIT.md](PREVENT_X_FULL_SYSTEM_INTEGRATION_AUDIT.md) — Complete 400+ line technical audit verifying all 7 lab services, 12 core engines, 9 network defense capabilities, and 200+ test cases.
+* **Academic Demonstration Guide**: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) — 15-minute reproducible protocol for project reviews and evaluations.
+* **Final Engineering Report**: [docs/PREVENT_X_FINAL_PROJECT_REPORT.md](docs/PREVENT_X_FINAL_PROJECT_REPORT.md) — Comprehensive technical architecture and validation documentation.
 
 ---
 
