@@ -30,6 +30,7 @@ import {
   ValidationTestResult,
 } from '@/types/securityValidation';
 import { securityValidationApi } from '@/services/securityValidationApi';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const SecurityValidationPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'runs' | 'explorer' | 'regression' | 'rollback' | 'canary'>('runs');
@@ -114,7 +115,7 @@ export const SecurityValidationPage: React.FC = () => {
         loadJobResults(safeJobs[0].id);
       }
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err.message || 'Failed to load validation telemetry');
+      setError(formatErrorMessage(err, 'Failed to load validation telemetry'));
       setJobs([]);
       setRollbacks([]);
     } finally {
@@ -157,7 +158,7 @@ export const SecurityValidationPage: React.FC = () => {
       loadJobResults(newJob.id);
       setActiveTab('explorer');
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err.message || 'Validation run failed');
+      setError(formatErrorMessage(err, 'Validation run failed'));
     } finally {
       setIsProcessing(false);
     }
@@ -183,7 +184,7 @@ export const SecurityValidationPage: React.FC = () => {
       await loadData();
       setActiveTab('rollback');
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err.message || 'Rollback execution failed');
+      setError(formatErrorMessage(err, 'Rollback execution failed'));
     } finally {
       setIsProcessing(false);
     }
@@ -197,7 +198,7 @@ export const SecurityValidationPage: React.FC = () => {
       setCanaryPolicy(updated);
       setActionSuccess('Canary safety policy and automated rollback thresholds saved successfully.');
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err.message || 'Failed to update canary policy');
+      setError(formatErrorMessage(err, 'Failed to update canary policy'));
     } finally {
       setIsProcessing(false);
     }
@@ -261,7 +262,7 @@ export const SecurityValidationPage: React.FC = () => {
         <div className="flex items-center justify-between rounded-lg border border-red-500/40 bg-red-950/40 p-3.5 text-sm text-red-200">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-400" />
-            <span>{error}</span>
+            <span>{typeof error === 'string' ? error : formatErrorMessage(error)}</span>
           </div>
           <button onClick={() => setError(null)} className="text-red-400 hover:text-red-200">
             <X className="h-4 w-4" />
@@ -375,8 +376,8 @@ export const SecurityValidationPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('runs')}
           className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'runs'
-              ? 'border-cyan-500 text-cyan-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+            ? 'border-cyan-500 text-cyan-400'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
         >
           <History className="h-4 w-4" />
@@ -389,8 +390,8 @@ export const SecurityValidationPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('explorer')}
           className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'explorer'
-              ? 'border-cyan-500 text-cyan-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+            ? 'border-cyan-500 text-cyan-400'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
         >
           <Terminal className="h-4 w-4" />
@@ -405,8 +406,8 @@ export const SecurityValidationPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('regression')}
           className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'regression'
-              ? 'border-cyan-500 text-cyan-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+            ? 'border-cyan-500 text-cyan-400'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
         >
           <ShieldAlert className="h-4 w-4" />
@@ -416,8 +417,8 @@ export const SecurityValidationPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('rollback')}
           className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'rollback'
-              ? 'border-cyan-500 text-cyan-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+            ? 'border-cyan-500 text-cyan-400'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
         >
           <RotateCcw className="h-4 w-4" />
@@ -430,8 +431,8 @@ export const SecurityValidationPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('canary')}
           className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'canary'
-              ? 'border-cyan-500 text-cyan-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+            ? 'border-cyan-500 text-cyan-400'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
         >
           <Sliders className="h-4 w-4" />
@@ -479,8 +480,8 @@ export const SecurityValidationPage: React.FC = () => {
                             {job.id.substring(0, 8)}...
                           </div>
                           <span className={`inline-block mt-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium ${job.environment === 'PRODUCTION'
-                              ? 'bg-purple-950 text-purple-300 border border-purple-800/60'
-                              : 'bg-blue-950 text-blue-300 border border-blue-800/60'
+                            ? 'bg-purple-950 text-purple-300 border border-purple-800/60'
+                            : 'bg-blue-950 text-blue-300 border border-blue-800/60'
                             }`}>
                             {job.environment}
                           </span>
@@ -488,10 +489,10 @@ export const SecurityValidationPage: React.FC = () => {
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${job.status === 'PASSED'
-                                ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
-                                : job.status === 'FAILED'
-                                  ? 'bg-red-950 text-red-400 border border-red-800/60'
-                                  : 'bg-slate-800 text-slate-300'
+                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
+                              : job.status === 'FAILED'
+                                ? 'bg-red-950 text-red-400 border border-red-800/60'
+                                : 'bg-slate-800 text-slate-300'
                               }`}
                           >
                             {job.status === 'PASSED' ? (
@@ -581,8 +582,8 @@ export const SecurityValidationPage: React.FC = () => {
                   {selectedJob && (
                     <span
                       className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${selectedJob.status === 'PASSED'
-                          ? 'bg-emerald-950 text-emerald-400'
-                          : 'bg-red-950 text-red-400'
+                        ? 'bg-emerald-950 text-emerald-400'
+                        : 'bg-red-950 text-red-400'
                         }`}
                     >
                       {selectedJob.status} ({selectedJob.pass_rate_percentage}%)
@@ -693,8 +694,8 @@ export const SecurityValidationPage: React.FC = () => {
                             <td className="px-4 py-3 font-mono">
                               <span
                                 className={`font-semibold ${r.actual_status_code === r.expected_status_code
-                                    ? 'text-emerald-400'
-                                    : 'text-red-400'
+                                  ? 'text-emerald-400'
+                                  : 'text-red-400'
                                   }`}
                               >
                                 {r.actual_status_code ?? 'None'}
@@ -703,8 +704,8 @@ export const SecurityValidationPage: React.FC = () => {
                             <td className="px-4 py-3 font-mono">
                               <span
                                 className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${r.actual_decision === 'BLOCKED'
-                                    ? 'bg-red-950 text-red-300 border border-red-800/60'
-                                    : 'bg-emerald-950 text-emerald-300 border border-emerald-800/60'
+                                  ? 'bg-red-950 text-red-300 border border-red-800/60'
+                                  : 'bg-emerald-950 text-emerald-300 border border-emerald-800/60'
                                   }`}
                               >
                                 {r.actual_decision}
@@ -716,8 +717,8 @@ export const SecurityValidationPage: React.FC = () => {
                             <td className="px-4 py-3 text-right">
                               <span
                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${r.result === 'PASSED'
-                                    ? 'bg-emerald-950 text-emerald-400'
-                                    : 'bg-red-950 text-red-400'
+                                  ? 'bg-emerald-950 text-emerald-400'
+                                  : 'bg-red-950 text-red-400'
                                   }`}
                               >
                                 {r.result === 'PASSED' ? (
@@ -983,10 +984,10 @@ export const SecurityValidationPage: React.FC = () => {
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${rb.status === 'COMPLETED'
-                                ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
-                                : rb.status === 'ROLLBACK_FAILED'
-                                  ? 'bg-red-950 text-red-400 border border-red-800/60'
-                                  : 'bg-amber-950 text-amber-300 border border-amber-800/60'
+                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
+                              : rb.status === 'ROLLBACK_FAILED'
+                                ? 'bg-red-950 text-red-400 border border-red-800/60'
+                                : 'bg-amber-950 text-amber-300 border border-amber-800/60'
                               }`}
                           >
                             {rb.status === 'COMPLETED' ? (

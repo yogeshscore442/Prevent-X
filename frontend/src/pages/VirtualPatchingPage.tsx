@@ -31,6 +31,7 @@ import {
   WafEnforcementLog,
 } from '@/types/virtualPatch';
 import { virtualPatchApi } from '@/services/virtualPatchApi';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const VirtualPatchingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'recommendations' | 'rules' | 'deployments' | 'logs'>('recommendations');
@@ -108,7 +109,7 @@ export const VirtualPatchingPage: React.FC = () => {
       setDeployments(Array.isArray(depData) ? depData : []);
       setLogs(Array.isArray(logData) ? logData : []);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to load Virtual Patching telemetry.');
+      setError(formatErrorMessage(err, 'Failed to load Virtual Patching telemetry.'));
       setRecommendations([]);
       setRules([]);
       setDeployments([]);
@@ -413,7 +414,7 @@ export const VirtualPatchingPage: React.FC = () => {
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span className="text-sm">{error}</span>
+            <span className="text-sm">{typeof error === 'string' ? error : formatErrorMessage(error)}</span>
           </div>
           <button onClick={() => setError(null)} className="text-slate-400 hover:text-slate-200">
             <X className="w-4 h-4" />
@@ -508,8 +509,8 @@ export const VirtualPatchingPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('recommendations')}
           className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${activeTab === 'recommendations'
-              ? 'border-indigo-500 text-indigo-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+            ? 'border-indigo-500 text-indigo-400'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
         >
           <Zap className="w-4 h-4" />
@@ -519,8 +520,8 @@ export const VirtualPatchingPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('rules')}
           className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${activeTab === 'rules'
-              ? 'border-indigo-500 text-indigo-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+            ? 'border-indigo-500 text-indigo-400'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
         >
           <Code2 className="w-4 h-4" />
@@ -530,8 +531,8 @@ export const VirtualPatchingPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('deployments')}
           className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${activeTab === 'deployments'
-              ? 'border-indigo-500 text-indigo-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+            ? 'border-indigo-500 text-indigo-400'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
         >
           <Layers className="w-4 h-4" />
@@ -541,8 +542,8 @@ export const VirtualPatchingPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('logs')}
           className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${activeTab === 'logs'
-              ? 'border-indigo-500 text-indigo-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+            ? 'border-indigo-500 text-indigo-400'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
         >
           <History className="w-4 h-4" />
@@ -767,8 +768,8 @@ export const VirtualPatchingPage: React.FC = () => {
                         <button
                           onClick={() => handleToggleRule(rule)}
                           className={`px-2 py-1 rounded text-[11px] font-medium transition ${rule.is_active
-                              ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
-                              : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                            ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
+                            : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
                             }`}
                         >
                           {rule.is_active ? 'Disable' : 'Enable'}
@@ -951,8 +952,8 @@ export const VirtualPatchingPage: React.FC = () => {
                       <td className="p-3">
                         <span
                           className={`text-[10px] px-2 py-0.5 rounded-full border font-mono font-bold ${log.decision === 'BLOCKED'
-                              ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                            : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                             }`}
                         >
                           {log.decision} ({log.response_status_code})

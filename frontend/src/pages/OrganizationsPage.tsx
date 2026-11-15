@@ -3,6 +3,7 @@ import { Building2, Plus, AlertCircle, Loader2, Globe, Mail } from 'lucide-react
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Organization, OrganizationCreatePayload } from '@/types/organization';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const OrganizationsPage: React.FC = () => {
   const { user, switchOrganization, activeOrgId } = useAuth();
@@ -90,7 +91,7 @@ export const OrganizationsPage: React.FC = () => {
         <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
+            <span>{typeof error === 'string' ? error : formatErrorMessage(error)}</span>
           </div>
           <button onClick={() => setError(null)} className="text-xs text-rose-400 hover:underline">
             Dismiss

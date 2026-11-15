@@ -23,6 +23,7 @@ import {
 import { vulnerabilityApi } from '@/services/vulnerabilityApi';
 import { api } from '@/services/api';
 import { ManagedAsset } from '@/types/asset';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const VulnerabilitiesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'inventory' | 'catalog' | 'history'>('inventory');
@@ -94,7 +95,7 @@ export const VulnerabilitiesPage: React.FC = () => {
       setRecords(data?.items || []);
       setTotalRecords(data?.total || 0);
     } catch (err: any) {
-      setError(err?.response?.data?.detail?.message || 'Failed to load vulnerability records.');
+      setError(formatErrorMessage(err, 'Failed to load vulnerability records.'));
       setRecords([]);
     } finally {
       setIsLoading(false);
@@ -310,7 +311,7 @@ export const VulnerabilitiesPage: React.FC = () => {
         <div className="p-3 bg-rose-950/40 border border-rose-800 rounded-lg text-xs text-rose-300 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-rose-400" />
-            <span>{error}</span>
+            <span>{typeof error === 'string' ? error : formatErrorMessage(error)}</span>
           </div>
           <button onClick={() => setError(null)} className="text-rose-400 hover:text-white">
             <X className="w-4 h-4" />

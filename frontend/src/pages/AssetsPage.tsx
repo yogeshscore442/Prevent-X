@@ -10,6 +10,7 @@ import {
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { ManagedAsset, AssetCreatePayload, AssetType, EnvironmentType, CriticalityType } from '@/types/asset';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const AssetsPage: React.FC = () => {
   const { hasPermission } = useAuth();
@@ -113,7 +114,7 @@ export const AssetsPage: React.FC = () => {
         <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
+            <span>{typeof error === 'string' ? error : formatErrorMessage(error)}</span>
           </div>
           <button onClick={() => setError(null)} className="text-xs text-rose-400 hover:underline">
             Dismiss
@@ -178,10 +179,10 @@ export const AssetsPage: React.FC = () => {
                     <td className="py-3 px-4">
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-semibold ${asset.criticality === 'CRITICAL'
-                            ? 'bg-rose-950 text-rose-300 border border-rose-800/60'
-                            : asset.criticality === 'HIGH'
-                              ? 'bg-amber-950 text-amber-300 border border-amber-800/60'
-                              : 'bg-slate-800 text-slate-300'
+                          ? 'bg-rose-950 text-rose-300 border border-rose-800/60'
+                          : asset.criticality === 'HIGH'
+                            ? 'bg-amber-950 text-amber-300 border border-amber-800/60'
+                            : 'bg-slate-800 text-slate-300'
                           }`}
                       >
                         {asset.criticality}

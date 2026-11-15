@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { attackSurfaceApi } from '@/services/attackSurfaceApi';
 import { api } from '@/services/api';
+import { formatErrorMessage } from '@/utils/formatError';
 import {
   AttackSurfaceOverview,
   DiscoveryJob,
@@ -120,7 +121,7 @@ export const AttackSurfacePage: React.FC = () => {
         setRunningActiveScan(runningScan);
       }
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to initialize attack surface engine.');
+      setError(formatErrorMessage(err, 'Failed to initialize attack surface engine.'));
       setJobs([]);
       setDomains([]);
       setFindings([]);
@@ -202,7 +203,7 @@ export const AttackSurfacePage: React.FC = () => {
       setJobs((prev) => [created, ...prev]);
       setActiveTab('discovery');
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to trigger discovery job.');
+      setError(formatErrorMessage(err, 'Failed to trigger discovery job.'));
     } finally {
       setIsSubmittingJob(false);
     }
@@ -214,7 +215,7 @@ export const AttackSurfacePage: React.FC = () => {
       setActiveJob(cancelled);
       setJobs((prev) => prev.map((j) => (j.id === jobId ? cancelled : j)));
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to cancel discovery job.');
+      setError(formatErrorMessage(err, 'Failed to cancel discovery job.'));
     }
   };
 
@@ -264,7 +265,7 @@ export const AttackSurfacePage: React.FC = () => {
       setActiveScans((prev) => [created, ...prev]);
       setActiveTab('active-discovery');
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to trigger active scan.');
+      setError(formatErrorMessage(err, 'Failed to trigger active scan.'));
     } finally {
       setIsSubmittingActiveScan(false);
     }
@@ -276,7 +277,7 @@ export const AttackSurfacePage: React.FC = () => {
       setRunningActiveScan(cancelled);
       setActiveScans((prev) => prev.map((s) => (s.id === jobId ? cancelled : s)));
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to cancel active scan.');
+      setError(formatErrorMessage(err, 'Failed to cancel active scan.'));
     }
   };
 
@@ -285,7 +286,7 @@ export const AttackSurfacePage: React.FC = () => {
       const detail = await attackSurfaceApi.getDomainDetail(domainId);
       setInspectDomain(detail);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to load domain inspection details.');
+      setError(formatErrorMessage(err, 'Failed to load domain inspection details.'));
     }
   };
 
@@ -417,7 +418,7 @@ export const AttackSurfacePage: React.FC = () => {
         <div className="p-3.5 bg-rose-950/60 border border-rose-500/40 rounded-lg flex items-center justify-between text-xs text-rose-300">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
+            <span>{typeof error === 'string' ? error : formatErrorMessage(error)}</span>
           </div>
           <button onClick={() => setError(null)} className="text-slate-400 hover:text-white">
             <X className="w-4 h-4" />
@@ -611,12 +612,12 @@ export const AttackSurfacePage: React.FC = () => {
                       </div>
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-mono border ${j.status === 'COMPLETED'
-                            ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
-                            : j.status === 'RUNNING'
-                              ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
-                              : j.status === 'FAILED'
-                                ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
-                                : 'bg-slate-800 border-slate-700 text-slate-300'
+                          ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                          : j.status === 'RUNNING'
+                            ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
+                            : j.status === 'FAILED'
+                              ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
+                              : 'bg-slate-800 border-slate-700 text-slate-300'
                           }`}
                       >
                         {j.status}
@@ -806,14 +807,14 @@ export const AttackSurfacePage: React.FC = () => {
                       <td className="px-4 py-3">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-mono border ${j.status === 'COMPLETED'
-                              ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
-                              : j.status === 'PARTIALLY_COMPLETED'
-                                ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
-                                : j.status === 'RUNNING'
-                                  ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
-                                  : j.status === 'FAILED'
-                                    ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
-                                    : 'bg-slate-800 border-slate-700 text-slate-300'
+                            ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                            : j.status === 'PARTIALLY_COMPLETED'
+                              ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
+                              : j.status === 'RUNNING'
+                                ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
+                                : j.status === 'FAILED'
+                                  ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
+                                  : 'bg-slate-800 border-slate-700 text-slate-300'
                             }`}
                         >
                           {j.status}
@@ -901,8 +902,8 @@ export const AttackSurfacePage: React.FC = () => {
                         type="button"
                         onClick={() => setScanProfile('BASIC')}
                         className={`p-3 rounded-lg border text-left transition-all ${scanProfile === 'BASIC'
-                            ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-sm'
-                            : 'bg-navy-950 border-navy-800 text-slate-400 hover:border-navy-700'
+                          ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-sm'
+                          : 'bg-navy-950 border-navy-800 text-slate-400 hover:border-navy-700'
                           }`}
                       >
                         <div className="text-xs font-bold">BASIC</div>
@@ -913,8 +914,8 @@ export const AttackSurfacePage: React.FC = () => {
                         type="button"
                         onClick={() => setScanProfile('STANDARD')}
                         className={`p-3 rounded-lg border text-left transition-all ${scanProfile === 'STANDARD'
-                            ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-sm'
-                            : 'bg-navy-950 border-navy-800 text-slate-400 hover:border-navy-700'
+                          ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-sm'
+                          : 'bg-navy-950 border-navy-800 text-slate-400 hover:border-navy-700'
                           }`}
                       >
                         <div className="text-xs font-bold">STANDARD</div>
@@ -925,8 +926,8 @@ export const AttackSurfacePage: React.FC = () => {
                         type="button"
                         onClick={() => setScanProfile('CUSTOM')}
                         className={`p-3 rounded-lg border text-left transition-all ${scanProfile === 'CUSTOM'
-                            ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-sm'
-                            : 'bg-navy-950 border-navy-800 text-slate-400 hover:border-navy-700'
+                          ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-sm'
+                          : 'bg-navy-950 border-navy-800 text-slate-400 hover:border-navy-700'
                           }`}
                       >
                         <div className="text-xs font-bold">CUSTOM</div>
@@ -1131,10 +1132,10 @@ export const AttackSurfacePage: React.FC = () => {
                           <td className="px-4 py-3">
                             <span
                               className={`px-2 py-0.5 rounded text-[10px] font-mono border ${svc.state === 'OPEN'
-                                  ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
-                                  : svc.state === 'FILTERED'
-                                    ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
-                                    : 'bg-slate-800 border-slate-700 text-slate-400'
+                                ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                                : svc.state === 'FILTERED'
+                                  ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
+                                  : 'bg-slate-800 border-slate-700 text-slate-400'
                                 }`}
                             >
                               {svc.state}
@@ -1233,14 +1234,14 @@ export const AttackSurfacePage: React.FC = () => {
                         <td className="px-4 py-3">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-mono border ${s.status === 'COMPLETED'
-                                ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
-                                : s.status === 'RUNNING'
-                                  ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
-                                  : s.status === 'CANCELLED'
-                                    ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
-                                    : s.status === 'FAILED'
-                                      ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
-                                      : 'bg-slate-800 border-slate-700 text-slate-400'
+                              ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                              : s.status === 'RUNNING'
+                                ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
+                                : s.status === 'CANCELLED'
+                                  ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
+                                  : s.status === 'FAILED'
+                                    ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
+                                    : 'bg-slate-800 border-slate-700 text-slate-400'
                               }`}
                           >
                             {s.status}
@@ -1308,8 +1309,8 @@ export const AttackSurfacePage: React.FC = () => {
                       <td className="px-4 py-3">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-mono border ${d.is_subdomain
-                              ? 'bg-blue-950/60 border-blue-500/40 text-blue-300'
-                              : 'bg-purple-950/60 border-purple-500/40 text-purple-300'
+                            ? 'bg-blue-950/60 border-blue-500/40 text-blue-300'
+                            : 'bg-purple-950/60 border-purple-500/40 text-purple-300'
                             }`}
                         >
                           {d.is_subdomain ? 'SUBDOMAIN' : 'APEX'}
@@ -1428,12 +1429,12 @@ export const AttackSurfacePage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${f.evidence_nature === 'VERIFIED_ISSUE'
-                            ? 'bg-rose-950/60 border-rose-600/50 text-rose-300'
-                            : f.evidence_nature === 'POTENTIAL_WEAKNESS'
-                              ? 'bg-amber-950/60 border-amber-600/50 text-amber-300'
-                              : f.evidence_nature === 'OBSERVED_FACT'
-                                ? 'bg-blue-950/60 border-blue-600/50 text-blue-300'
-                                : 'bg-slate-800 border-slate-700 text-slate-300'
+                          ? 'bg-rose-950/60 border-rose-600/50 text-rose-300'
+                          : f.evidence_nature === 'POTENTIAL_WEAKNESS'
+                            ? 'bg-amber-950/60 border-amber-600/50 text-amber-300'
+                            : f.evidence_nature === 'OBSERVED_FACT'
+                              ? 'bg-blue-950/60 border-blue-600/50 text-blue-300'
+                              : 'bg-slate-800 border-slate-700 text-slate-300'
                           }`}>
                           {f.evidence_nature || 'FACT'}
                         </span>
@@ -1446,8 +1447,8 @@ export const AttackSurfacePage: React.FC = () => {
                       <td className="px-4 py-3 font-mono text-[11px] text-slate-300">
                         {f.verification_status ? (
                           <span className={`px-1.5 py-0.5 rounded text-[9px] border ${f.verification_status === 'VERIFIED_UNCLAIMED_RESOURCE'
-                              ? 'bg-rose-950/80 border-rose-500 text-rose-300 font-bold'
-                              : 'bg-navy-950 border-navy-700 text-slate-400'
+                            ? 'bg-rose-950/80 border-rose-500 text-rose-300 font-bold'
+                            : 'bg-navy-950 border-navy-700 text-slate-400'
                             }`}>
                             {f.verification_status}
                           </span>
@@ -1681,8 +1682,8 @@ export const AttackSurfacePage: React.FC = () => {
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded text-[10px] font-mono border ${inspectService.state === 'OPEN'
-                      ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
-                      : 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
+                    ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                    : 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
                     }`}
                 >
                   {inspectService.state}
@@ -1754,8 +1755,8 @@ export const AttackSurfacePage: React.FC = () => {
                     <span className="text-slate-400">Days Remaining:</span>
                     <span
                       className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] border ${tls.is_expired || (tls.days_remaining !== undefined && tls.days_remaining < 0)
-                          ? 'bg-rose-950/80 border-rose-600/50 text-rose-300'
-                          : 'bg-emerald-950/80 border-emerald-600/50 text-emerald-300'
+                        ? 'bg-rose-950/80 border-rose-600/50 text-rose-300'
+                        : 'bg-emerald-950/80 border-emerald-600/50 text-emerald-300'
                         }`}
                     >
                       {tls.days_remaining !== undefined ? `${tls.days_remaining} days` : 'N/A'}

@@ -31,73 +31,9 @@ import {
 } from '@/types/zeroTrust';
 import { zeroTrustApi } from '@/services/zeroTrustApi';
 
-export interface StructuredError {
-  code?: string;
-  message?: string;
-  detail?: string | { code?: string; message?: string };
-  [key: string]: any;
-}
-
-export type ErrorValue = string | StructuredError | null | undefined;
-
-/**
- * Safely extracts a human-readable message string from string, structured error object,
- * Error instance, null, or undefined without crashing React rendering.
- */
-export const formatErrorMessage = (err: unknown): string => {
-  if (err == null) {
-    return '';
-  }
-  if (typeof err === 'string') {
-    return err;
-  }
-  if (typeof err === 'object') {
-    const obj = err as Record<string, any>;
-    // 1. Direct message property
-    if (obj.message != null && typeof obj.message !== 'object') {
-      const msg = String(obj.message).trim();
-      if (msg) return msg;
-    }
-    // 2. Direct detail property (string or primitive)
-    if (obj.detail != null && typeof obj.detail !== 'object') {
-      const det = String(obj.detail).trim();
-      if (det) return det;
-    }
-    // 3. Nested detail object { code, message }
-    if (typeof obj.detail === 'object' && obj.detail !== null) {
-      if (obj.detail.message != null && typeof obj.detail.message !== 'object') {
-        const msg = String(obj.detail.message).trim();
-        if (msg) return msg;
-      }
-      if (obj.detail.code != null && typeof obj.detail.code !== 'object') {
-        const cd = String(obj.detail.code).trim();
-        if (cd) return cd;
-      }
-    }
-    // 4. Direct code property
-    if (obj.code != null && typeof obj.code !== 'object') {
-      const cd = String(obj.code).trim();
-      if (cd) return cd;
-    }
-    // 5. Array of validation errors (e.g. FastAPI / Pydantic)
-    if (Array.isArray(obj)) {
-      const messages = obj
-        .map((item) => {
-          if (item == null) return '';
-          if (typeof item === 'string') return item;
-          if (typeof item === 'object') {
-            return item.msg || item.message || '';
-          }
-          return String(item);
-        })
-        .filter(Boolean);
-      if (messages.length > 0) {
-        return messages.join(', ');
-      }
-    }
-  }
-  return 'An unexpected error occurred.';
-};
+import { formatErrorMessage, StructuredError, ErrorValue } from '@/utils/formatError';
+export { formatErrorMessage };
+export type { StructuredError, ErrorValue };
 
 export const ZeroTrustPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'posture' | 'threat_intel' | 'anomalies' | 'responses'>('posture');
@@ -498,8 +434,8 @@ export const ZeroTrustPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('posture')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'posture'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
         >
           <Shield className="w-4 h-4" />
@@ -509,8 +445,8 @@ export const ZeroTrustPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('threat_intel')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'threat_intel'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
         >
           <Globe className="w-4 h-4" />
@@ -520,8 +456,8 @@ export const ZeroTrustPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('anomalies')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'anomalies'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
         >
           <AlertTriangle className="w-4 h-4" />
@@ -531,8 +467,8 @@ export const ZeroTrustPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('responses')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'responses'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
         >
           <Lock className="w-4 h-4" />
@@ -596,10 +532,10 @@ export const ZeroTrustPage: React.FC = () => {
                           <div className="w-24 bg-slate-800 rounded-full h-2 overflow-hidden">
                             <div
                               className={`h-2 rounded-full ${a.trust_score >= 70
-                                  ? 'bg-emerald-500'
-                                  : a.trust_score >= 30
-                                    ? 'bg-amber-500'
-                                    : 'bg-rose-500'
+                                ? 'bg-emerald-500'
+                                : a.trust_score >= 30
+                                  ? 'bg-amber-500'
+                                  : 'bg-rose-500'
                                 }`}
                               style={{ width: `${Math.min(100, Math.max(5, a.trust_score))}%` }}
                             />
@@ -788,8 +724,8 @@ export const ZeroTrustPage: React.FC = () => {
                 <div
                   key={an.id}
                   className={`p-4 rounded-xl border transition ${an.is_zero_day_indicator
-                      ? 'border-purple-600/50 bg-purple-950/20'
-                      : 'border-slate-800 bg-slate-900/60'
+                    ? 'border-purple-600/50 bg-purple-950/20'
+                    : 'border-slate-800 bg-slate-900/60'
                     }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -876,8 +812,8 @@ export const ZeroTrustPage: React.FC = () => {
                   key={st}
                   onClick={() => setResponseStatusFilter(st)}
                   className={`px-2.5 py-1 rounded text-xs font-medium transition ${responseStatusFilter === st
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-900 text-slate-400 hover:text-white'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-900 text-slate-400 hover:text-white'
                     }`}
                 >
                   {st}
@@ -929,14 +865,14 @@ export const ZeroTrustPage: React.FC = () => {
                       <td className="px-4 py-3.5">
                         <span
                           className={`px-2 py-0.5 rounded text-xs font-semibold ${ac.status === 'EXECUTED'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              : ac.status === 'APPROVED'
-                                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                                : ac.status === 'PENDING_APPROVAL'
-                                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                                  : ac.status === 'ROLLED_BACK'
-                                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                                    : 'bg-rose-500/20 text-rose-400'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : ac.status === 'APPROVED'
+                              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                              : ac.status === 'PENDING_APPROVAL'
+                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                : ac.status === 'ROLLED_BACK'
+                                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                  : 'bg-rose-500/20 text-rose-400'
                             }`}
                         >
                           {ac.status}

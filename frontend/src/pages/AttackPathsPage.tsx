@@ -32,6 +32,7 @@ import {
 import { attackPathApi } from '@/services/attackPathApi';
 import { api } from '@/services/api';
 import { ManagedAsset } from '@/types/asset';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const AttackPathsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'paths' | 'recommendations' | 'trust'>('paths');
@@ -104,7 +105,7 @@ export const AttackPathsPage: React.FC = () => {
           : [];
       setAssets(assetList);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to load attack path intelligence data.');
+      setError(formatErrorMessage(err, 'Failed to load attack path intelligence data.'));
     } finally {
       setIsLoading(false);
     }
@@ -297,7 +298,7 @@ export const AttackPathsPage: React.FC = () => {
       {error && (
         <div className="p-4 bg-red-900/20 border border-red-700/50 rounded-lg flex items-center gap-3 text-red-300">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-          <p className="text-sm">{error}</p>
+          <p className="text-sm">{typeof error === 'string' ? error : formatErrorMessage(error)}</p>
         </div>
       )}
 
@@ -364,8 +365,8 @@ export const AttackPathsPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('paths')}
           className={`pb-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'paths'
-              ? 'border-rose-500 text-rose-400'
-              : 'border-transparent text-gray-400 hover:text-gray-200'
+            ? 'border-rose-500 text-rose-400'
+            : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
         >
           <Workflow className="w-4 h-4" />
@@ -375,8 +376,8 @@ export const AttackPathsPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('recommendations')}
           className={`pb-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'recommendations'
-              ? 'border-rose-500 text-rose-400'
-              : 'border-transparent text-gray-400 hover:text-gray-200'
+            ? 'border-rose-500 text-rose-400'
+            : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
         >
           <ShieldCheck className="w-4 h-4" />
@@ -386,8 +387,8 @@ export const AttackPathsPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('trust')}
           className={`pb-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'trust'
-              ? 'border-rose-500 text-rose-400'
-              : 'border-transparent text-gray-400 hover:text-gray-200'
+            ? 'border-rose-500 text-rose-400'
+            : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
         >
           <LinkIcon className="w-4 h-4" />
@@ -465,8 +466,8 @@ export const AttackPathsPage: React.FC = () => {
                       key={path.id}
                       onClick={() => setSelectedPath(path)}
                       className={`p-4 rounded-xl border transition-all cursor-pointer ${isSelected
-                          ? 'bg-rose-950/20 border-rose-500/60 shadow-lg shadow-rose-950/30'
-                          : 'bg-gray-900 border-gray-800 hover:border-gray-700'
+                        ? 'bg-rose-950/20 border-rose-500/60 shadow-lg shadow-rose-950/30'
+                        : 'bg-gray-900 border-gray-800 hover:border-gray-700'
                         }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -624,10 +625,10 @@ export const AttackPathsPage: React.FC = () => {
                             <div className="flex flex-col items-center">
                               <div
                                 className={`w-14 h-14 rounded-xl border flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-105 ${node.is_crown_jewel
-                                    ? 'bg-rose-950/40 border-rose-500 text-rose-300 shadow-rose-950/50'
-                                    : node.is_entry_point
-                                      ? 'bg-amber-950/40 border-amber-500 text-amber-300 shadow-amber-950/50'
-                                      : 'bg-blue-950/40 border-blue-500 text-blue-300 shadow-blue-950/50'
+                                  ? 'bg-rose-950/40 border-rose-500 text-rose-300 shadow-rose-950/50'
+                                  : node.is_entry_point
+                                    ? 'bg-amber-950/40 border-amber-500 text-amber-300 shadow-amber-950/50'
+                                    : 'bg-blue-950/40 border-blue-500 text-blue-300 shadow-blue-950/50'
                                   }`}
                               >
                                 {node.is_crown_jewel ? (
@@ -643,10 +644,10 @@ export const AttackPathsPage: React.FC = () => {
                               </span>
                               <span
                                 className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${node.is_crown_jewel
-                                    ? 'text-rose-400 bg-rose-950/80'
-                                    : node.is_entry_point
-                                      ? 'text-amber-400 bg-amber-950/80'
-                                      : 'text-blue-400 bg-blue-950/80'
+                                  ? 'text-rose-400 bg-rose-950/80'
+                                  : node.is_entry_point
+                                    ? 'text-amber-400 bg-amber-950/80'
+                                    : 'text-blue-400 bg-blue-950/80'
                                   }`}
                               >
                                 {node.is_crown_jewel ? 'Crown Jewel' : node.is_entry_point ? 'Entry Point' : 'Pivot'}
@@ -824,8 +825,8 @@ export const AttackPathsPage: React.FC = () => {
                         <td className="py-3.5 px-4">
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded ${rec.risk_reduction === 'HIGH'
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                               }`}
                           >
                             {rec.risk_reduction}
@@ -834,8 +835,8 @@ export const AttackPathsPage: React.FC = () => {
                         <td className="py-3.5 px-4">
                           <span
                             className={`text-[10px] font-semibold px-2 py-0.5 rounded ${rec.implementation_complexity === 'LOW'
-                                ? 'text-emerald-400 bg-emerald-950/40'
-                                : 'text-amber-400 bg-amber-950/40'
+                              ? 'text-emerald-400 bg-emerald-950/40'
+                              : 'text-amber-400 bg-amber-950/40'
                               }`}
                           >
                             {rec.implementation_complexity}
@@ -844,8 +845,8 @@ export const AttackPathsPage: React.FC = () => {
                         <td className="py-3.5 px-4">
                           <span
                             className={`text-[10px] font-semibold px-2 py-0.5 rounded ${rec.smb_operational_impact === 'MINIMAL'
-                                ? 'text-emerald-400 bg-emerald-950/40'
-                                : 'text-amber-400 bg-amber-950/40'
+                              ? 'text-emerald-400 bg-emerald-950/40'
+                              : 'text-amber-400 bg-amber-950/40'
                               }`}
                           >
                             {rec.smb_operational_impact}
@@ -854,10 +855,10 @@ export const AttackPathsPage: React.FC = () => {
                         <td className="py-3.5 px-4">
                           <span
                             className={`text-[10px] font-mono px-2 py-0.5 rounded ${rec.status === 'IMPLEMENTED'
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                : rec.status === 'ACCEPTED'
-                                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                  : 'bg-gray-800 text-gray-300 border border-gray-700'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : rec.status === 'ACCEPTED'
+                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                : 'bg-gray-800 text-gray-300 border border-gray-700'
                               }`}
                           >
                             {rec.status}

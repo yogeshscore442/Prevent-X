@@ -29,6 +29,7 @@ import {
   SecurityIncidentDetail,
 } from '@/types/monitoring';
 import { monitoringApi } from '@/services/monitoringApi';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const SecurityCenterPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'incidents' | 'alerts_retention'>('overview');
@@ -466,7 +467,7 @@ export const SecurityCenterPage: React.FC = () => {
       {errorMessage && (
         <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-lg animate-in fade-in">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{errorMessage}</span>
+          <span>{typeof errorMessage === 'string' ? errorMessage : formatErrorMessage(errorMessage)}</span>
         </div>
       )}
 
@@ -476,8 +477,8 @@ export const SecurityCenterPage: React.FC = () => {
           <button
             onClick={() => setActiveTab('overview')}
             className={`pb-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'overview'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-gray-400 hover:text-gray-200'
+              ? 'border-cyan-500 text-cyan-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
           >
             SMB Posture Overview
@@ -485,8 +486,8 @@ export const SecurityCenterPage: React.FC = () => {
           <button
             onClick={() => setActiveTab('events')}
             className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'events'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-gray-400 hover:text-gray-200'
+              ? 'border-cyan-500 text-cyan-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
           >
             Live Security Events
@@ -499,8 +500,8 @@ export const SecurityCenterPage: React.FC = () => {
           <button
             onClick={() => setActiveTab('incidents')}
             className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'incidents'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-gray-400 hover:text-gray-200'
+              ? 'border-cyan-500 text-cyan-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
           >
             Correlated Incidents
@@ -513,8 +514,8 @@ export const SecurityCenterPage: React.FC = () => {
           <button
             onClick={() => setActiveTab('alerts_retention')}
             className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'alerts_retention'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-gray-400 hover:text-gray-200'
+              ? 'border-cyan-500 text-cyan-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
           >
             In-App Alerts & Retention
@@ -552,12 +553,12 @@ export const SecurityCenterPage: React.FC = () => {
                 <span className="text-xs text-gray-400">Rating Grade:</span>
                 <span
                   className={`px-2 py-0.5 text-xs font-bold rounded ${overview?.security_grade === 'A+' || overview?.security_grade === 'A'
-                      ? 'bg-emerald-500/20 text-emerald-400'
-                      : overview?.security_grade === 'B'
-                        ? 'bg-blue-500/20 text-blue-400'
-                        : overview?.security_grade === 'C'
-                          ? 'bg-amber-500/20 text-amber-400'
-                          : 'bg-red-500/20 text-red-400'
+                    ? 'bg-emerald-500/20 text-emerald-400'
+                    : overview?.security_grade === 'B'
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : overview?.security_grade === 'C'
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'bg-red-500/20 text-red-400'
                     }`}
                 >
                   Grade {overview ? overview.security_grade : '--'}
@@ -683,12 +684,12 @@ export const SecurityCenterPage: React.FC = () => {
                         <span className="text-gray-400">{count} assets</span>
                         <span
                           className={`w-2.5 h-2.5 rounded-full ${status === 'TRUSTED'
-                              ? 'bg-emerald-400'
-                              : status === 'RESTRICTED'
-                                ? 'bg-amber-400'
-                                : status === 'UNTRUSTED'
-                                  ? 'bg-red-400'
-                                  : 'bg-gray-500'
+                            ? 'bg-emerald-400'
+                            : status === 'RESTRICTED'
+                              ? 'bg-amber-400'
+                              : status === 'UNTRUSTED'
+                                ? 'bg-red-400'
+                                : 'bg-gray-500'
                             }`}
                         />
                       </div>
@@ -1155,8 +1156,8 @@ export const SecurityCenterPage: React.FC = () => {
                   <div
                     key={alert.id}
                     className={`p-3 rounded-lg border text-xs transition-colors flex items-start justify-between gap-3 ${alert.is_acknowledged
-                        ? 'bg-gray-800/30 border-gray-800/60 opacity-60'
-                        : 'bg-gray-800/80 border-gray-700'
+                      ? 'bg-gray-800/30 border-gray-800/60 opacity-60'
+                      : 'bg-gray-800/80 border-gray-700'
                       }`}
                   >
                     <div>

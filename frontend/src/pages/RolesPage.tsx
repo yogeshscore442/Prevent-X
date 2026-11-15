@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { KeyRound, Check, Loader2, AlertCircle } from 'lucide-react';
 import { api } from '@/services/api';
 import { Role } from '@/types/role';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const RolesPage: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -42,7 +43,7 @@ export const RolesPage: React.FC = () => {
       {error && (
         <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{error}</span>
+          <span>{typeof error === 'string' ? error : formatErrorMessage(error)}</span>
         </div>
       )}
 

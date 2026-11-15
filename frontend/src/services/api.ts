@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const api = axios.create({
   baseURL: '/api/v1',
@@ -40,7 +41,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: handles session expirations
+// Response interceptor: handles session expirations & normalizes error messages
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -49,7 +50,17 @@ api.interceptors.response.use(
       localStorage.removeItem('preventx_user');
       window.location.href = '/login';
     }
+
+    // Normalize error payloads so err.response.data.detail is ALWAYS a string
+    if (error.response?.data) {
+      if (typeof error.response.data.detail === 'object' && error.response.data.detail !== null) {
+        error.response.data.detail = formatErrorMessage(error.response.data.detail);
+      }
+      error.message = formatErrorMessage(error.response.data);
+    }
+
     return Promise.reject(error);
   }
 );
+
 

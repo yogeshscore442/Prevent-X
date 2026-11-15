@@ -175,12 +175,11 @@ describe('NetworkDefensePage Component (Phase 11)', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Advanced Network Defense & Detection Layer')).toBeInTheDocument();
+      expect(screen.getByText('Elevated Administrator')).toBeInTheDocument();
+      expect(screen.getByText('1 Active')).toBeInTheDocument();
+      expect(screen.getByText('1 Rules')).toBeInTheDocument();
+      expect(screen.getByText('80% F1')).toBeInTheDocument();
     });
-
-    expect(screen.getByText('Elevated Administrator')).toBeInTheDocument();
-    expect(screen.getByText('1 Active')).toBeInTheDocument();
-    expect(screen.getByText('1 Rules')).toBeInTheDocument();
-    expect(screen.getByText('80% F1')).toBeInTheDocument();
   });
 
   it('renders firewall management tab with rules table', async () => {

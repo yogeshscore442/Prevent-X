@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { networkDefenseApi } from '@/services/networkDefenseApi';
+import { formatErrorMessage } from '@/utils/formatError';
 import {
   AttackDetectionResult,
   DynamicIPBlock,
@@ -439,7 +440,7 @@ export const NetworkDefensePage: React.FC = () => {
         <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{actionError}</span>
+            <span>{typeof actionError === 'string' ? actionError : formatErrorMessage(actionError)}</span>
           </div>
           <button onClick={() => setActionError(null)} className="text-slate-400 hover:text-white">✕</button>
         </div>
@@ -525,8 +526,8 @@ export const NetworkDefensePage: React.FC = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${isActive
-                  ? 'border-cyan-500 text-cyan-400 bg-cyan-500/5'
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                ? 'border-cyan-500 text-cyan-400 bg-cyan-500/5'
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
                 }`}
             >
               <Icon className="w-4 h-4" />
@@ -599,8 +600,8 @@ export const NetworkDefensePage: React.FC = () => {
                                 {isOsEnforced ? (
                                   <span
                                     className={`px-2 py-0.5 rounded text-[10px] font-semibold ${r.action.toLowerCase() === 'block'
-                                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                      ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                      : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                                       }`}
                                   >
                                     {r.action.toUpperCase()} ({r.direction})
@@ -649,8 +650,8 @@ export const NetworkDefensePage: React.FC = () => {
                                   <button
                                     onClick={() => handleRollbackRule(r.id)}
                                     className={`px-2 py-1 rounded text-[11px] transition-colors border ${isFailed
-                                        ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
-                                        : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/30'
+                                      ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                      : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/30'
                                       }`}
                                     title={isFailed ? 'Clear un-enforced database record' : 'Rollback rule from Windows Defender Firewall'}
                                   >
@@ -792,10 +793,10 @@ export const NetworkDefensePage: React.FC = () => {
                             <td className="p-3">
                               <span
                                 className={`px-2 py-0.5 rounded text-[10px] ${b.status === 'ACTIVE'
-                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                    : b.status === 'PENDING_APPROVAL'
-                                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                      : 'bg-slate-700 text-slate-400'
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  : b.status === 'PENDING_APPROVAL'
+                                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                    : 'bg-slate-700 text-slate-400'
                                   }`}
                               >
                                 {b.status}
@@ -1296,8 +1297,8 @@ export const NetworkDefensePage: React.FC = () => {
                 onClick={handleRunReplay}
                 disabled={isReplaying || !canRunValidation}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-xs transition-colors ${!canRunValidation
-                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
-                    : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
+                  : 'bg-cyan-600 hover:bg-cyan-500 text-white'
                   }`}
                 title={!canRunValidation ? "Requires 'validation:run' permission" : "Run differential traffic replay"}
               >

@@ -3,6 +3,7 @@ import { Users, UserPlus, AlertCircle, Loader2, CheckCircle } from 'lucide-react
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserItem, UserCreatePayload } from '@/types/user';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const UsersPage: React.FC = () => {
   const { hasPermission } = useAuth();
@@ -90,7 +91,7 @@ export const UsersPage: React.FC = () => {
         <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
+            <span>{typeof error === 'string' ? error : formatErrorMessage(error)}</span>
           </div>
           <button onClick={() => setError(null)} className="text-xs text-rose-400 hover:underline">
             Dismiss

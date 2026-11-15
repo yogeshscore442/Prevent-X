@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, Key, Mail, Lock, User, Building, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { api } from '@/services/api';
+import { formatErrorMessage } from '@/utils/formatError';
 
 export const BootstrapPage: React.FC = () => {
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ export const BootstrapPage: React.FC = () => {
           {error && (
             <div className="mb-6 p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
+              <span>{typeof error === 'string' ? error : formatErrorMessage(error)}</span>
             </div>
           )}
 
