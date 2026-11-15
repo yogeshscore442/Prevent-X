@@ -17,6 +17,7 @@ from backend.app.api.v1.endpoints import (
     zero_trust,
     virtual_patching,
     security_validation,
+    monitoring,
 )
 
 api_router = APIRouter()
@@ -57,6 +58,9 @@ api_router.include_router(virtual_patching.router)
 
 # Automated Security Validation & Reliable Rollback Engine (MOD-10, MOD-08)
 api_router.include_router(security_validation.router)
+
+# Real-Time Monitoring & Centralized Security Management Platform (MOD-09, MOD-12)
+api_router.include_router(monitoring.router)
 
 
 

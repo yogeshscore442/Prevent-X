@@ -359,6 +359,58 @@ class RealTimeTrafficMonitoringModule(BaseSecurityModule):
     def target_phase(self) -> int:
         return 7
 
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        from uuid import UUID
+        from backend.app.database.session import SessionLocal
+        from backend.app.modules.monitoring.service import MonitoringService
+        from backend.app.modules.monitoring.schemas import (
+            BatchSecurityEventIngestRequest,
+            SecurityEventCreate,
+        )
+
+        org_id_val = payload.get("organization_id")
+        if not org_id_val:
+            raise ValueError("organization_id is required.")
+        org_id = UUID(str(org_id_val))
+
+        db = SessionLocal()
+        try:
+            if action_name == "ingest_event":
+                event_data = SecurityEventCreate(**payload["event"])
+                event, is_dup = MonitoringService.ingest_single_event(db, org_id, event_data)
+                return {
+                    "status": "SUCCESS",
+                    "event_id": str(event.id) if event else None,
+                    "is_deduplicated": is_dup,
+                }
+            elif action_name == "ingest_batch":
+                batch_req = BatchSecurityEventIngestRequest(**payload)
+                res = MonitoringService.ingest_batch(db, org_id, batch_req)
+                return res.model_dump()
+            elif action_name == "get_events":
+                events, total = MonitoringService.get_events(
+                    db,
+                    org_id,
+                    source=payload.get("source"),
+                    category=payload.get("category"),
+                    severity=payload.get("severity"),
+                    page=payload.get("page", 1),
+                    size=payload.get("size", 50),
+                )
+                return {
+                    "total": total,
+                    "count": len(events),
+                    "events": [str(e.id) for e in events],
+                }
+            else:
+                raise ValueError(f"Unknown action '{action_name}' for {self.module_id}")
+        finally:
+            db.close()
+
 
 class AutomatedSecurityValidationModule(BaseSecurityModule):
     @property
@@ -478,8 +530,53 @@ class CentralizedSMBSecurityPlatformModule(BaseSecurityModule):
 
     @property
     def is_operational(self) -> bool:
-        # Phase 1 operational foundation represents the core multi-tenant management platform
         return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        from uuid import UUID
+        from backend.app.database.session import SessionLocal
+        from backend.app.modules.monitoring.service import MonitoringService
+        from backend.app.modules.monitoring.schemas import (
+            EventRetentionPolicyUpdate,
+            SecurityIncidentCreate,
+        )
+
+        org_id_val = payload.get("organization_id")
+        if not org_id_val:
+            raise ValueError("organization_id is required.")
+        org_id = UUID(str(org_id_val))
+
+        db = SessionLocal()
+        try:
+            if action_name == "get_overview":
+                stats = MonitoringService.get_security_center_overview(db, org_id)
+                return stats.model_dump()
+            elif action_name == "create_incident":
+                inc_data = SecurityIncidentCreate(**payload["incident"])
+                user_id = UUID(str(payload["user_id"])) if payload.get("user_id") else None
+                inc = MonitoringService.create_incident(db, org_id, inc_data, actor_user_id=user_id)
+                return {
+                    "incident_id": str(inc.id),
+                    "incident_number": inc.incident_number,
+                    "status": inc.status,
+                    "severity": inc.severity,
+                }
+            elif action_name == "update_retention":
+                ret_data = EventRetentionPolicyUpdate(**payload["retention"])
+                policy = MonitoringService.update_retention_policy(db, org_id, ret_data)
+                return {
+                    "policy_id": str(policy.id),
+                    "retention_days": policy.retention_days,
+                    "max_stored_events": policy.max_stored_events,
+                    "auto_prune_enabled": policy.auto_prune_enabled,
+                }
+            elif action_name == "prune_events":
+                count = MonitoringService.prune_expired_events(db, org_id)
+                return {"pruned_count": count}
+            else:
+                raise ValueError(f"Unknown action '{action_name}' for {self.module_id}")
+        finally:
+            db.close()
 
 
 # Global registry of all 12 modules

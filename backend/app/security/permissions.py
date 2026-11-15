@@ -70,6 +70,13 @@ class PermissionCode:
     VALIDATION_READ = "validation:read"
     VALIDATION_RUN = "validation:run"
     ROLLBACK_EXECUTE = "rollback:execute"
+    MONITORING_READ = "monitoring:read"
+    MONITORING_INGEST = "monitoring:ingest"
+    INCIDENT_READ = "incident:read"
+    INCIDENT_MANAGE = "incident:manage"
+    INCIDENT_CONTAIN = "incident:contain"
+    ALERT_MANAGE = "alert:manage"
+    RETENTION_MANAGE = "retention:manage"
 
 
 # Default Role-Permission matrix
@@ -114,6 +121,13 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.VALIDATION_READ,
         PermissionCode.VALIDATION_RUN,
         PermissionCode.ROLLBACK_EXECUTE,
+        PermissionCode.MONITORING_READ,
+        PermissionCode.MONITORING_INGEST,
+        PermissionCode.INCIDENT_READ,
+        PermissionCode.INCIDENT_MANAGE,
+        PermissionCode.INCIDENT_CONTAIN,
+        PermissionCode.ALERT_MANAGE,
+        PermissionCode.RETENTION_MANAGE,
     },
     SystemRole.ORG_ADMIN: {
         PermissionCode.ORG_READ,
@@ -153,6 +167,13 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.VALIDATION_READ,
         PermissionCode.VALIDATION_RUN,
         PermissionCode.ROLLBACK_EXECUTE,
+        PermissionCode.MONITORING_READ,
+        PermissionCode.MONITORING_INGEST,
+        PermissionCode.INCIDENT_READ,
+        PermissionCode.INCIDENT_MANAGE,
+        PermissionCode.INCIDENT_CONTAIN,
+        PermissionCode.ALERT_MANAGE,
+        PermissionCode.RETENTION_MANAGE,
     },
     SystemRole.SECURITY_ANALYST: {
         PermissionCode.ORG_READ,
@@ -184,6 +205,11 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.WAF_LOGS_READ,
         PermissionCode.VALIDATION_READ,
         PermissionCode.VALIDATION_RUN,
+        PermissionCode.MONITORING_READ,
+        PermissionCode.MONITORING_INGEST,
+        PermissionCode.INCIDENT_READ,
+        PermissionCode.INCIDENT_MANAGE,
+        PermissionCode.ALERT_MANAGE,
     },
     SystemRole.AUDITOR: {
         PermissionCode.ORG_READ,
@@ -201,6 +227,8 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.VIRTUAL_PATCH_READ,
         PermissionCode.WAF_LOGS_READ,
         PermissionCode.VALIDATION_READ,
+        PermissionCode.MONITORING_READ,
+        PermissionCode.INCIDENT_READ,
     },
     SystemRole.VIEWER: {
         PermissionCode.ORG_READ,
@@ -215,12 +243,14 @@ ROLE_PERMISSIONS_MAP = {
         PermissionCode.RESPONSE_ACTION_READ,
         PermissionCode.VIRTUAL_PATCH_READ,
         PermissionCode.WAF_LOGS_READ,
+        PermissionCode.MONITORING_READ,
+        PermissionCode.INCIDENT_READ,
     },
 }
 
 
 def extract_token_from_request(request: Request) -> Optional[str]:
-    """Extracts authentication token from Authorization header or HttpOnly cookie."""
+    """Extracts authentication token from Authorization header, HttpOnly cookie, or query parameter."""
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
         return auth_header.split(" ", 1)[1].strip()
@@ -228,6 +258,11 @@ def extract_token_from_request(request: Request) -> Optional[str]:
     cookie_token = request.cookies.get("preventx_session")
     if cookie_token:
         return cookie_token
+
+    # Allow query parameter token for SSE EventSource / streaming endpoints
+    query_token = request.query_params.get("token")
+    if query_token:
+        return query_token
 
     return None
 

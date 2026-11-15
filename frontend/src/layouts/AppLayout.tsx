@@ -18,6 +18,7 @@ import {
   Layers,
   Workflow,
   CheckCheck,
+  Radio,
   Menu,
   X,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ export const AppLayout: React.FC = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Security Center', path: '/security-center', icon: Radio },
     { name: 'Managed Assets', path: '/assets', icon: Server },
     { name: 'Attack Surface', path: '/attack-surface', icon: Globe },
     { name: 'Vulnerabilities', path: '/vulnerabilities', icon: Bug },

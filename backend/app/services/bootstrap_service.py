@@ -53,6 +53,13 @@ SYSTEM_PERMISSIONS = [
     (PermissionCode.VALIDATION_READ, "View Security Validations", "Allows inspecting automated validation suites, WAF regression matrices, and test results", "validation"),
     (PermissionCode.VALIDATION_RUN, "Execute Security Validations", "Allows triggering automated security validation and regression probe jobs", "validation"),
     (PermissionCode.ROLLBACK_EXECUTE, "Execute Reliable Rollback", "Allows initiating atomic rollback of reverse proxy configurations to known-good snapshots", "validation"),
+    (PermissionCode.MONITORING_READ, "View Monitoring & Incidents", "Allows inspecting real-time security events, telemetry streams, and incidents", "monitoring"),
+    (PermissionCode.MONITORING_INGEST, "Ingest Security Telemetry", "Allows ingesting external Nginx logs, WAF events, and security telemetry", "monitoring"),
+    (PermissionCode.INCIDENT_READ, "View Incidents", "Allows viewing correlated security incidents and timeline entries", "monitoring"),
+    (PermissionCode.INCIDENT_MANAGE, "Manage Incidents", "Allows updating incident status, severity, assignees, and notes", "monitoring"),
+    (PermissionCode.INCIDENT_CONTAIN, "Contain Incidents", "Allows executing containment actions against assets and threats", "monitoring"),
+    (PermissionCode.ALERT_MANAGE, "Manage Security Alerts", "Allows acknowledging alerts and updating alerting preferences", "monitoring"),
+    (PermissionCode.RETENTION_MANAGE, "Manage Retention Policies", "Allows updating data retention windows and cleanup policies", "monitoring"),
 ]
 
 SYSTEM_ROLES = [
