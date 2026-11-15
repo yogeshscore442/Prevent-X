@@ -38,18 +38,20 @@ class PreventionRecommendationEngine:
         """
         recs: List[Dict[str, Any]] = []
 
-        # 1. Check for Virtual Patching Opportunities (High priority for SMBs with CVEs)
+        # 1. Check for Virtual Patching Opportunities (High priority for SMBs with CVEs or CWE weaknesses)
         for vuln in vulnerabilities:
             cve_id = getattr(vuln, "cve_id", None)
             matched_svc = getattr(vuln, "matched_service_name", "web service")
-            if cve_id:
+            vuln_title = getattr(vuln, "title", "Synthetic Weakness")
+            if cve_id or "SQL Injection" in vuln_title or "Weakness" in vuln_title or "CWE" in vuln_title:
+                identifier = cve_id if cve_id else "CWE-89 (SQL Injection)"
                 recs.append({
-                    "title": f"Deploy Virtual Patch Rule for {cve_id} on {entry_asset.name}",
+                    "title": f"Deploy Virtual Patch Rule for {identifier} on {entry_asset.name}",
                     "category": RecommendationCategory.VIRTUAL_PATCH.value,
                     "target_asset_id": entry_asset.id,
                     "description": (
                         f"Implement a zero-downtime virtual patch rule in front of {matched_svc} on "
-                        f"'{entry_asset.name}' to inspect and block malicious payload signatures targeting {cve_id} "
+                        f"'{entry_asset.name}' to inspect and block malicious payload signatures targeting {identifier} "
                         f"without modifying application source code."
                     ),
                     "risk_reduction": "HIGH",

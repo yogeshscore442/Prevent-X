@@ -1,7 +1,9 @@
-# PREVENT-X: Production Deployment & Operations Guide
+# PREVENT-X: Deployment & Operations Guide
 **Platform Version**: 1.0.0 (Phase 9 Release)  
 **Operating Systems**: Linux (Ubuntu 22.04 LTS / Debian 12 / RHEL 9), Windows (Windows 10/11, Server 2022)  
 **Target Architecture**: Single-node or distributed multi-tier deployment  
+**Deployment Verification Scope**: Native local standalone execution verified on Windows 11 host. Docker Compose manifests are provided for containerized deployment, but container runtime execution on this host remains untested due to absence of Docker daemon.  
+**Compliance Notice**: Technical safeguards aligned with selected DPDP Act requirements; Security controls designed to support relevant CERT-In requirements. Does not claim formal legal or regulatory certification.  
 
 ---
 
@@ -215,7 +217,7 @@ After bootstrap, authenticate via `/api/v1/auth/login` to obtain session tokens.
 - [x] **CORS Origin Whitelist**: Restrict `ALLOWED_HOSTS` and CORS origins to verified production domain names.
 - [x] **Cookie Security**: Set `COOKIE_SECURE=true` and `COOKIE_SAMESITE=lax` in production.
 - [x] **Distributed Locks**: Verify PostgreSQL advisory locks are active for all deployment and rollback actions.
-- [x] **Audit Log Retention**: Ensure PostgreSQL volume storage retains audit events for a minimum of 180 days (CERT-In compliance).
+- [x] **Audit Log Retention**: Ensure PostgreSQL volume storage retains audit events for a minimum of 180 days (designed to support relevant CERT-In log retention requirements).
 
 ---
 
@@ -233,3 +235,4 @@ curl -s http://localhost:8000/api/v1/virtual-patches/status | jq .
 # Run Full Automated Test Suite
 pytest -v backend/tests/
 ```
+

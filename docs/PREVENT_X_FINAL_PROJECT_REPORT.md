@@ -1,8 +1,9 @@
-# PREVENT-X: Next-Generation AI-Era Cyber Defense & Autonomous Virtual Patching Platform
+# PREVENT-X: AI-Era Cyber Defense & Autonomous Virtual Patching Platform
 ## Final Comprehensive Project & Engineering Report
-**Project Phase**: Phase 9 (Final Integration, End-to-End Testing & Production Readiness)  
+**Project Phase**: Phase 9 (Final Integration, End-to-End Testing & Readiness Verification)  
 **Target Sector**: Indian Small and Medium Businesses (SMBs) & Digital Enterprises  
-**Regulatory Alignment**: Digital Personal Data Protection (DPDP) Act 2023, CERT-In Cyber Security Directions  
+**Regulatory Framework Reference**: Technical safeguards aligned with selected DPDP Act requirements; Security controls designed to support relevant CERT-In requirements  
+**Certification Disclaimer**: PREVENT-X does not claim formal legal, statutory, or regulatory certification under the DPDP Act 2023 or CERT-In directives. Controls are technical engineering implementations intended to assist organizations in meeting their technical security objectives.  
 **Architecture Classification**: Multi-Tenant, Zero-Downtime Autonomous Cyber Defense System  
 **Implementation Date**: November 2026  
 
@@ -11,19 +12,19 @@
 ## 1. Executive Summary & Problem Statement
 
 ### 1.1 The SMB Cyber Threat Landscape in the AI Era
-Indian Small and Medium Businesses (SMBs) form the backbone of the national digital economy, accounting for over 30% of GDP and processing millions of digital transactions daily through Unified Payments Interface (UPI), Account Aggregator networks, and Open Network for Digital Commerce (ONDC). However, these enterprises face an unprecedented asymmetric cyber threat landscape:
+Indian Small and Medium Businesses (SMBs) form the backbone of the national digital economy, accounting for over 30% of GDP and processing millions of digital transactions daily through Unified Payments Interface (UPI), Account Aggregator networks, and Open Network for Digital Commerce (ONDC). However, these enterprises face an asymmetric cyber threat landscape:
 
-1. **Automated, LLM-Augmented Reconnaissance & Exploitation**: Threat actors leverage automated vulnerability scanners, LLM-driven exploit generators, and mass network probing engines that identify unpatched endpoints within minutes of public CVE disclosure.
+1. **Automated, LLM-Augmented Reconnaissance & Exploitation**: Threat actors leverage automated vulnerability scanners, LLM-driven exploit generators, and mass network probing engines that identify unpatched endpoints within hours of public vulnerability disclosure.
 2. **Critical Patching Lag & Resource Constraints**: SMBs typically lack dedicated 24/7 Security Operations Centers (SOCs) and application security engineering teams. The average time-to-patch across Indian digital SMBs exceeds 45 to 90 days due to legacy code dependencies, third-party vendor delays, fear of regression outages, and developer shortages.
-3. **Severe Regulatory & Financial Penalties**:
-   - **DPDP Act 2023**: Imposes statutory penalties up to ₹250 Crores for failure to implement reasonable security safeguards to prevent personal data breaches.
-   - **CERT-In Directives**: Mandates mandatory reporting of cybersecurity incidents within 6 hours of discovery and the secure retention of logs for 180 days within Indian jurisdiction.
-4. **Failure of Traditional Security Appliances**: Legacy Web Application Firewalls (WAFs) and enterprise SIEM platforms are notoriously expensive, complex to tune, prone to business-disrupting false positives, and fail to provide automated compensating controls without extensive manual rule configuration.
+3. **Regulatory Security Demands**:
+   - **DPDP Act 2023 Provisions**: Highlights the legal necessity of implementing reasonable technical safeguards to prevent personal data breaches.
+   - **CERT-In Directives**: Calls for the prompt reporting of cybersecurity incidents (within 6 hours of discovery where applicable) and the secure retention of logs for 180 days within Indian jurisdiction.
+4. **Limitations of Traditional Security Appliances**: Legacy Web Application Firewalls (WAFs) and enterprise SIEM platforms are frequently expensive, complex to tune, prone to false positives on customized applications, and fail to provide automated compensating controls without manual rule configuration.
 
 ### 1.2 PREVENT-X Strategic Value Proposition
-**PREVENT-X** is an autonomous, tenant-isolated, zero-downtime cyber defense platform designed specifically for Indian SMB digital businesses. It unifies active attack surface discovery, CVE/CWE vulnerability mapping, evidence-backed attack path graph traversal, Zero Trust risk assessment, deterministic virtual patch rule compilation, staging security validation, human-authorized live Nginx reverse-proxy deployment, real-time traffic monitoring, and instant verifiable atomic rollback into a single coherent system.
+**PREVENT-X** is an autonomous, tenant-isolated, zero-downtime cyber defense platform designed specifically for Indian SMB digital businesses. It unifies active attack surface discovery, CWE/CVE vulnerability mapping, evidence-backed attack path graph traversal, Zero Trust risk assessment, deterministic virtual patch rule compilation, staging security validation, human-authorized live Nginx reverse-proxy deployment, real-time traffic monitoring, and instant verifiable atomic rollback into a single coherent system.
 
-Rather than waiting weeks for developers to modify application source code, PREVENT-X compiles and enforces **synthesized virtual patches** directly at the native reverse-proxy layer within minutes—providing continuous protection and zero business downtime while engineering teams prepare permanent source-code fixes.
+Rather than waiting weeks for developers to modify application source code, PREVENT-X compiles and enforces **synthesized virtual patches** directly at the native reverse-proxy layer—providing immediate compensating protection while engineering teams prepare permanent source-code fixes.
 
 ---
 
@@ -33,18 +34,18 @@ PREVENT-X is architected as a modular, asynchronous, multi-tenant defense platfo
 
 ```mermaid
 flowchart TD
-    subgraph External_Traffic["External Internet Traffic"]
-        Client[Legitimate Users & Attackers]
+    subgraph External_Traffic["External Traffic Simulation"]
+        Client[Test Clients & Simulated Payloads]
     end
 
     subgraph Edge_Gateway["MOD-08 / MOD-09 / MOD-10: Nginx Native Reverse Proxy Gateway"]
         Nginx[Native Nginx 1.26.2 Reverse Proxy]
-        WAF_Rules[Compiled Staged / Production Virtual Patch Rules]
+        WAF_Rules[Compiled Virtual Patch Rules]
         Rate_Limiter[Burst Rate Limiting & Method Filtering]
-        Nginx_Logs[Access & WAF Enforcement Log Stream]
+        Nginx_Logs[Access & Enforcement Log Stream]
     end
 
-    subgraph Internal_Upstream["Protected SMB Infrastructure"]
+    subgraph Internal_Upstream["Protected Application Tier"]
         UpstreamApp[Payment Gateway / Web Application / APIs]
     end
 
@@ -72,7 +73,7 @@ flowchart TD
         subgraph Concurrency_Locking["Distributed Locking & Concurrency"]
             PgLock[PostgreSQL Advisory Locks (Deploy & Rollback Scope)]
             CeleryQueue[Celery Asynchronous Workers]
-            RedisBroker[Redis 7 Cache, Celery Broker & SSE Pub/Sub]
+            RedisBroker[Redis Cache, Celery Broker & SSE Pub/Sub]
         end
 
         subgraph Storage_Layer["Relational & Evidence Persistence"]
@@ -99,25 +100,28 @@ flowchart TD
 | Module ID | Module Title | Primary Engineering Capability | Core Technical Stack | Operational Status |
 | :--- | :--- | :--- | :--- | :---: |
 | **MOD-01** | Attack Surface Intelligence Engine | Passive and controlled active discovery of domains, DNS telemetry, TLS certificates, endpoints, and open TCP ports with connection-level IP pinning (`SafePinningBackend`). | Python 3.10, dnspython, cryptography, socket, httpx | **OPERATIONAL (100%)** |
-| **MOD-02** | Advanced Vulnerability Mapping Engine | Ingestion of NVD CVEs, CISA KEV catalog, and EPSS scores; automated matching against discovered services and software versions. | SQLAlchemy, REST APIs, NVD/CISA Schemas, PostgreSQL | **OPERATIONAL (100%)** |
+| **MOD-02** | Advanced Vulnerability Mapping Engine | Ingestion of NVD CVEs, CISA KEV catalog, and EPSS scores; automated matching against discovered services, software versions, and local weakness definitions. | SQLAlchemy, REST APIs, NVD/CISA Schemas, PostgreSQL | **OPERATIONAL (100%)** |
 | **MOD-03** | Attack Path & Prerequisite Analysis Engine | Multi-hop Directed Acyclic Graph (DAG) construction mapping entry points through intermediate assets to high-value crown jewels based strictly on verified empirical evidence. | NetworkX, DAG Traversal, MITRE ATT&CK Mapper | **OPERATIONAL (100%)** |
 | **MOD-04** | Zero Trust Security Engine | Continuous multi-factor trust evaluation across identity, service exposure, network segmentation, and MFA enforcement without implicit trust. | Zero Trust Scorer, RBAC Context, Risk Matrix | **OPERATIONAL (100%)** |
 | **MOD-05** | AI Threat Intelligence Engine | Real-time threat feed ingestion, CISA KEV correlation, EPSS predictive exploit forecasting, and indicator extraction. | EPSS Scorer, KEV Sync Workers, Threat Ingestion | **OPERATIONAL (100%)** |
 | **MOD-06** | Proactive Security Hardening Engine | Automated generation of least-privilege security headers, TLS configuration hardening, HTTP method restriction, and burst rate limiting. | Nginx Syntax Generator, Hardening Rule Templates | **OPERATIONAL (100%)** |
 | **MOD-07** | Zero-Day & Unknown Threat Protection Engine | Statistical Z-score heuristic anomaly detection, baseline deviation analysis, unexpected HTTP payload signatures, and unmapped port monitoring. | NumPy, Scipy, Z-Score Anomaly Detector, Celery | **OPERATIONAL (100%)** |
-| **MOD-08** | Intelligent Virtual Patching Engine | Deterministic compilation of regex match conditions, URI pattern blocks, and SQLi/XSS/RCE filters into native Nginx configuration files with syntax verification (`nginx -t`). | Nginx Config Compiler, AST Parser, Hashlib SHA-256 | **OPERATIONAL (100%)** |
+| **MOD-08** | Intelligent Virtual Patching Engine | Deterministic compilation of regex match conditions, URI pattern blocks, and SQLi/XSS filters into native Nginx configuration files with syntax verification (`nginx -t`). | Nginx Config Compiler, AST Parser, Hashlib SHA-256 | **OPERATIONAL (100%)** |
 | **MOD-09** | Real-Time Traffic Monitoring Engine | Structured log ingestion from native Nginx, WAF enforcement event tracking, sliding-window event aggregation, and automated MITRE technique correlation. | Log Parser, PostgreSQL Ingestion, Redis Pub/Sub, SSE | **OPERATIONAL (100%)** |
-| **MOD-10** | Automated Security Validation Engine | Execution of non-destructive 21-test probe suites across SQLi, XSS, Path Traversal, and Command Injection against live reverse proxy endpoints with zero false-positive tolerance. | httpx Test Harness, Regression Matrix, Metric Scorer | **OPERATIONAL (100%)** |
-| **MOD-11** | Automated Response & Reliable Rollback Engine | Distributed deployment locking via PostgreSQL advisory locks, atomic Nginx configuration rollback, SHA-256 snapshot verification, and active containment workflows. | PostgreSQL Advisory Locks, Subprocess, Signal Reloader | **OPERATIONAL (100%)** |
-| **MOD-12** | Centralized SMB Security Management Platform | Unified executive dashboard, posture score (0-100), CERT-In compliant incident views, live SSE telemetry feeds, and audit trail logs. | React 18, TypeScript, Tailwind CSS, Lucide Icons, Vite | **OPERATIONAL (100%)** |
+| **MOD-10** | Automated Security Validation Engine | Execution of non-destructive 21-test probe suites across SQLi, XSS, Path Traversal, and Command Injection against live reverse proxy endpoints with regression measurement. | httpx Test Harness, Regression Matrix, Metric Scorer | **OPERATIONAL (100%)** |
+| **MOD-11** | Automated Response & Reliable Rollback Engine | Distributed deployment locking via PostgreSQL advisory locks, atomic Nginx configuration rollback, SHA-256 snapshot verification, and administrative containment workflows. | PostgreSQL Advisory Locks, Subprocess, Signal Reloader | **OPERATIONAL (100%)** |
+| **MOD-12** | Centralized SMB Security Management Platform | Unified executive dashboard, posture score (0-100), incident management views designed to support CERT-In reporting, live SSE feeds, and audit trail logs. | React 18, TypeScript, Tailwind CSS, Lucide Icons, Vite | **OPERATIONAL (100%)** |
 
 ---
 
 ## 3. The 17-Step Controlled End-to-End Security Workflow
 
-To demonstrate complete end-to-end integration and rigorous production readiness, PREVENT-X was evaluated against a full **17-step controlled security scenario** implemented as an automated integration suite in [test_end_to_end_security_workflow.py](file:///c:/Users/YOGESH/Desktop/PREVENT-X/backend/tests/test_end_to_end_security_workflow.py).
+To demonstrate complete end-to-end integration across all 12 modules, PREVENT-X was evaluated against a full **17-step controlled security scenario** implemented as an automated integration suite in [test_end_to_end_security_workflow.py](file:///c:/Users/YOGESH/Desktop/PREVENT-X/backend/tests/test_end_to_end_security_workflow.py).
 
-The test scenario simulates an authorized Indian Fintech SMB (`SecurePay India Fintech SMB`) running a mission-critical payment processing backend upstream on port `8086`, with PREVENT-X operating a native Nginx reverse proxy on port `8085`.
+### Rigorous Vulnerability Evidence Protocol
+In adherence to empirical testing integrity, the demonstration uses a **clearly identified synthetic local SQL injection test vulnerability mapped directly to CWE-89** (`cve_id = None`). It does NOT invent an arbitrary CVE identifier nor reference rejected identifiers (such as CVE-2023-4567, which was rejected by NVD).
+
+The test scenario simulates an authorized Indian Fintech SMB (`SecurePay India Fintech SMB`) running a payment processing backend upstream on port `8086`, with PREVENT-X operating a native Nginx reverse proxy on port `8085`.
 
 ```mermaid
 sequenceDiagram
@@ -126,14 +130,14 @@ sequenceDiagram
     participant Platform as PREVENT-X Engine
     participant Proxy as Native Nginx Reverse Proxy (:8085)
     participant Upstream as Upstream Payment API (:8086)
-    actor Attacker as Threat Actor / Exploit Probe
+    actor Attacker as Test Client / Simulated Probes
 
     Admin->>Platform: 1. Register authorized SMB asset (ManagedAsset)
     Platform->>Platform: 2. Discover attack surface (ActiveScanJob / DiscoveredService :8086)
-    Platform->>Platform: 3. Identify controlled weakness (VulnerabilityRecord)
-    Platform->>Platform: 4. Map to CVE-2023-4567 / CWE-89 (SQL Injection)
-    Platform->>Platform: 5. Generate attack path graph (Risk Score: 85.0)
-    Platform->>Platform: 6. Synthesize explainable prevention recommendation
+    Platform->>Platform: 3. Identify controlled weakness (VulnerabilityRecord, cve_id=None)
+    Platform->>Platform: 4. Map finding to CWE-89 (Synthetic Local SQL Injection)
+    Platform->>Platform: 5. Generate attack path graph (Risk Score: 79.0, High Severity)
+    Platform->>Platform: 6. Synthesize explainable prevention recommendation (CWE-89)
     Platform->>Platform: 7. Generate virtual patch rule (PREVENTX-SQLI-CHECKOUT-PROTECTION)
     Platform->>Proxy: 8. Stage deployment & execute validation test suite (21 tests -> 100% pass)
     Admin->>Platform: 9. Review & approve production deployment (Human-in-the-Loop)
@@ -141,12 +145,12 @@ sequenceDiagram
     Admin->>Proxy: 11a. Send legitimate checkout request (/api/v1/checkout?item=1001)
     Proxy->>Upstream: Forward benign traffic
     Upstream-->>Admin: 12a. 200 OK (Payment processed safely)
-    Attacker->>Proxy: 11b. Send SQLi attack (/api/v1/checkout?item=1001'+UNION+SELECT+1,2,3--)
+    Attacker->>Proxy: 11b. Send SQLi probe (/api/v1/checkout?item=1001'+UNION+SELECT+1,2,3--)
     Proxy-->>Attacker: 12b. 403 Forbidden (Blocked by virtual patch rule)
     Proxy->>Platform: 13. Ingest WAF blocked event into monitoring pipeline
     Platform->>Platform: 14. Correlate repeat probes into Security Incident (INC-2026-0002, MITRE T1190)
     Platform->>Admin: 15. Display Incident & Posture Score (77, Grade: C) in Security Center
-    Admin->>Platform: 16. Authorize containment action (BLOCK_SOURCE_IP -> Incident CONTAINED)
+    Admin->>Platform: 16. Authorize containment workflow action (BLOCK_SOURCE_IP -> Incident CONTAINED)
     Admin->>Platform: 17. Execute atomic rollback (Restores clean baseline, SHA-256 verified, 200 OK sustained)
 ```
 
@@ -161,32 +165,32 @@ plugins: anyio-4.16.0, asyncio-0.23.8
 collected 1 item
 
 backend/tests/test_end_to_end_security_workflow.py::test_complete_end_to_end_security_workflow 
-{"timestamp": "2026-11-15T09:33:23.688531+00:00", "level": "INFO", "message": "PREVENT-X system roles and permissions successfully synchronized."}
-{"timestamp": "2026-11-15T09:33:24.256963+00:00", "level": "INFO", "message": "STEP 1 PASSED: Asset Payment Gateway API registered."}
-{"timestamp": "2026-11-15T09:33:24.266106+00:00", "level": "INFO", "message": "STEP 2 PASSED: Discovered service on port 8086."}
-{"timestamp": "2026-11-15T09:33:24.273363+00:00", "level": "INFO", "message": "STEP 3 & 4 PASSED: Vulnerability CVE-2023-4567 mapped to CWE-89."}
-{"timestamp": "2026-11-15T09:33:24.299365+00:00", "level": "INFO", "message": "STEP 5 PASSED: Attack path PATH-Payment_Gateway_API-TO-Payment_Gateway_API generated (score: 85.0)."}
-{"timestamp": "2026-11-15T09:33:24.300924+00:00", "level": "INFO", "message": "STEP 6 PASSED: Prevention recommendation 'Deploy Virtual Patch Rule for CVE-2023-4567 on Payment Gateway API' generated."}
-{"timestamp": "2026-11-15T09:33:24.443400+00:00", "level": "INFO", "message": "STEP 7 PASSED: Proposed virtual patch rule PREVENTX-SQLI-CHECKOUT-PROTECTION synthesized."}
-{"timestamp": "2026-11-15T09:33:25.612703+00:00", "level": "INFO", "message": "Launched Nginx reverse proxy daemon with configuration C:/Users/YOGESH/Desktop/PREVENT-X/infrastructure/bin/nginx/conf/preventx_bd5f4830-226c-4cda-813f-71f4bff30940.conf"}
-{"timestamp": "2026-11-15T09:33:26.701814+00:00", "level": "INFO", "message": "Starting Security Validation Job 4db94ae6-6a20-4019-9faa-d139138127bd (21 tests) against http://127.0.0.1:8085"}
-{"timestamp": "2026-11-15T09:33:26.809525+00:00", "level": "INFO", "message": "STEP 8 PASSED: Staging validation job passed with 100% pass rate."}
-{"timestamp": "2026-11-15T09:33:26.818330+00:00", "level": "INFO", "message": "STEP 9 PASSED: Production approval granted by administrator."}
-{"timestamp": "2026-11-15T09:33:26.978189+00:00", "level": "INFO", "message": "Successfully reloaded active Nginx with deployment bd5f4830-226c-4cda-813f-71f4bff30940"}
-{"timestamp": "2026-11-15T09:33:28.003530+00:00", "level": "INFO", "message": "STEP 10 PASSED: Deployed configuration to live Nginx proxy on port 8085."}
-{"timestamp": "2026-11-15T09:33:28.038284+00:00", "level": "INFO", "message": "STEP 11a & 12a PASSED: Legitimate request returned 200 OK through proxy."}
-{"timestamp": "2026-11-15T09:33:28.040558+00:00", "level": "INFO", "message": "STEP 11b & 12b PASSED: Malicious exploit attempt blocked with 403 Forbidden by WAF rule."}
-{"timestamp": "2026-11-15T09:33:28.083855+00:00", "level": "INFO", "message": "STEP 13 PASSED: Ingested WAF security event into real-time monitoring pipeline."}
-{"timestamp": "2026-11-15T09:33:28.102736+00:00", "level": "INFO", "message": "Created SecurityIncident INC-2026-0002 for source IP 198.51.100.22"}
-{"timestamp": "2026-11-15T09:33:28.106758+00:00", "level": "INFO", "message": "STEP 14 PASSED: Evidence correlated into Security Incident INC-2026-0002 (MITRE T1190)."}
-{"timestamp": "2026-11-15T09:33:28.123974+00:00", "level": "INFO", "message": "STEP 15 PASSED: Incident verified in Security Center overview (Score: 77, Grade: C)."}
-{"timestamp": "2026-11-15T09:33:28.133797+00:00", "level": "INFO", "message": "STEP 16 PASSED: Containment action 'BLOCK_SOURCE_IP' authorized and marked CONTAINED."}
-{"timestamp": "2026-11-15T09:33:28.272803+00:00", "level": "INFO", "message": "Successfully reloaded active Nginx with deployment 14d27edd-61f4-4907-8e90-d7e86694edc6"}
-{"timestamp": "2026-11-15T09:33:29.327724+00:00", "level": "INFO", "message": "Rollback completed successfully for deployment bd5f4830-226c-4cda-813f-71f4bff30940 to 14d27edd-61f4-4907-8e90-d7e86694edc6"}
-{"timestamp": "2026-11-15T09:33:29.425555+00:00", "level": "INFO", "message": "STEP 17 PASSED: Atomic rollback executed, baseline restored, SHA256 verified, traffic serving 200 OK."}
-{"timestamp": "2026-11-15T09:33:29.425555+00:00", "level": "INFO", "message": ">>> ALL 17 STEPS OF CONTROLLED END-TO-END SECURITY WORKFLOW COMPLETED SUCCESSFULLY! <<<"}
+{"timestamp": "2026-11-15T09:45:36.473674+00:00", "level": "INFO", "message": "PREVENT-X system roles and permissions successfully synchronized."}
+{"timestamp": "2026-11-15T09:45:37.042894+00:00", "level": "INFO", "message": "STEP 1 PASSED: Asset Payment Gateway API registered."}
+{"timestamp": "2026-11-15T09:45:37.054888+00:00", "level": "INFO", "message": "STEP 2 PASSED: Discovered service on port 8086."}
+{"timestamp": "2026-11-15T09:45:37.058778+00:00", "level": "INFO", "message": "STEP 3 & 4 PASSED: Synthetic local SQL injection weakness mapped to CWE-89 without invented CVE."}
+{"timestamp": "2026-11-15T09:45:37.085997+00:00", "level": "INFO", "message": "STEP 5 PASSED: Attack path PATH-Payment_Gateway_API-TO-Payment_Gateway_API generated (score: 79.0)."}
+{"timestamp": "2026-11-15T09:45:37.088232+00:00", "level": "INFO", "message": "STEP 6 PASSED: Prevention recommendation 'Deploy Virtual Patch Rule for CWE-89 (SQL Injection) on Payment Gateway API' generated."}
+{"timestamp": "2026-11-15T09:45:37.232463+00:00", "level": "INFO", "message": "STEP 7 PASSED: Proposed virtual patch rule PREVENTX-SQLI-CHECKOUT-PROTECTION synthesized."}
+{"timestamp": "2026-11-15T09:45:38.418066+00:00", "level": "INFO", "message": "Launched Nginx reverse proxy daemon with configuration C:/Users/YOGESH/Desktop/PREVENT-X/infrastructure/bin/nginx/conf/preventx_ba0a82ae-d0ad-4098-ad3f-06b306d77714.conf"}
+{"timestamp": "2026-11-15T09:45:39.471924+00:00", "level": "INFO", "message": "Starting Security Validation Job 361f980c-7ae4-4300-8957-ab07810b6009 (21 tests) against http://127.0.0.1:8085"}
+{"timestamp": "2026-11-15T09:45:39.588391+00:00", "level": "INFO", "message": "STEP 8 PASSED: Staging validation job passed with 100% pass rate."}
+{"timestamp": "2026-11-15T09:45:39.594697+00:00", "level": "INFO", "message": "STEP 9 PASSED: Production approval granted by administrator."}
+{"timestamp": "2026-11-15T09:45:39.727172+00:00", "level": "INFO", "message": "Successfully reloaded active Nginx with deployment ba0a82ae-d0ad-4098-ad3f-06b306d77714"}
+{"timestamp": "2026-11-15T09:45:40.787099+00:00", "level": "INFO", "message": "STEP 10 PASSED: Deployed configuration to live Nginx proxy on port 8085."}
+{"timestamp": "2026-11-15T09:45:40.833657+00:00", "level": "INFO", "message": "STEP 11a & 12a PASSED: Legitimate request returned 200 OK through proxy."}
+{"timestamp": "2026-11-15T09:45:40.836689+00:00", "level": "INFO", "message": "STEP 11b & 12b PASSED: Malicious exploit attempt blocked with 403 Forbidden by WAF rule."}
+{"timestamp": "2026-11-15T09:45:40.893429+00:00", "level": "INFO", "message": "STEP 13 PASSED: Ingested WAF security event into real-time monitoring pipeline."}
+{"timestamp": "2026-11-15T09:45:40.913029+00:00", "level": "INFO", "message": "Created SecurityIncident INC-2026-0002 for source IP 198.51.100.22"}
+{"timestamp": "2026-11-15T09:45:40.916495+00:00", "level": "INFO", "message": "STEP 14 PASSED: Evidence correlated into Security Incident INC-2026-0002 (MITRE T1190)."}
+{"timestamp": "2026-11-15T09:45:40.929938+00:00", "level": "INFO", "message": "STEP 15 PASSED: Incident verified in Security Center overview (Score: 77, Grade: C)."}
+{"timestamp": "2026-11-15T09:45:40.934418+00:00", "level": "INFO", "message": "STEP 16 PASSED: Containment approval/workflow action 'BLOCK_SOURCE_IP' recorded and incident marked CONTAINED (workflow status update; does not alter OS/firewall network packet filtering)."}
+{"timestamp": "2026-11-15T09:45:41.129433+00:00", "level": "INFO", "message": "Successfully reloaded active Nginx with deployment f843c7bd-cef7-4f87-9255-ba850dd09c2a"}
+{"timestamp": "2026-11-15T09:45:42.184053+00:00", "level": "INFO", "message": "Rollback completed successfully for deployment ba0a82ae-d0ad-4098-ad3f-06b306d77714 to f843c7bd-cef7-4f87-9255-ba850dd09c2a"}
+{"timestamp": "2026-11-15T09:45:42.277737+00:00", "level": "INFO", "message": "STEP 17 PASSED: Atomic rollback executed, baseline restored, SHA256 verified, traffic serving 200 OK."}
+{"timestamp": "2026-11-15T09:45:42.277737+00:00", "level": "INFO", "message": ">>> ALL 17 STEPS OF CONTROLLED END-TO-END SECURITY WORKFLOW COMPLETED SUCCESSFULLY! <<<"}
 PASSED [100%]
-======================== 1 passed in 6.97s ========================
+======================== 1 passed in 7.05s ========================
 ```
 
 ---
@@ -204,7 +208,7 @@ PREVENT-X implements hierarchical, least-privilege RBAC:
 - **`SystemAdmin`**: Platform operations, tenant provisioning, system health monitoring.
 - **`OrgAdmin`**: Tenant configuration, asset onboarding, virtual patch rule approval, containment authorization, and rollback execution.
 - **`SecurityEngineer`**: Vulnerability analysis, scan execution, virtual patch synthesis, and validation job trigger.
-- **`Auditor` / `Viewer`**: Read-only access to security dashboards, incident timelines, compliance reports, and audit logs.
+- **`Auditor` / `Viewer`**: Read-only access to security dashboards, incident timelines, compliance tracking views, and audit logs.
 - **Bootstrap Security**: System bootstrap tokens are single-use, rate-limited, and invalidated immediately upon first-tenant initialization.
 
 ### 4.3 Connection-Level IP Pinning & Anti-SSRF Defense (`SafePinningBackend`)
@@ -220,11 +224,15 @@ In distributed microservice and multi-worker deployments, simultaneous operation
 - **Application & Tenant Scope**: Locks are keyed specifically by `(organization_id, target_port)`, allowing concurrent operations across different tenants while strictly serializing changes to the same application gateway.
 - **Automatic Failure Recovery**: Because locks are tied to the PostgreSQL session/transaction, any process termination, Celery worker crash, or network partition automatically releases the lock immediately, preventing indefinite lockouts.
 
-### 4.5 Immutable Audit Logging & CERT-In Compliance
+### 4.5 Immutable Audit Logging Supporting CERT-In Requirements
 Every security-relevant action (login, token refresh, asset addition, scan initiation, rule modification, deployment approval, containment, and rollback) produces an immutable record in `audit_events`:
 - Captures timestamp in ISO-8601 UTC, actor user ID, client IP address, action code, resource type, resource ID, before/after change diffs, and execution status.
 - Audit logs cannot be updated or deleted through the API.
-- Fully aligns with CERT-In directions requiring verifiable chronological event retention.
+- Implements security controls designed to support relevant CERT-In event logging guidelines requiring verifiable chronological event retention.
+
+### 4.6 Verification of Containment Actions
+- **Containment Scope**: When an administrator selects `BLOCK_SOURCE_IP` in `execute_containment`, PREVENT-X records the administrative authorization, transitions the incident state to `CONTAINED`, logs the approving user, and appends a structured entry to the `incident_timeline_entries`.
+- **Enforcement Limitation Note**: This action operates at the **workflow and database tracking level**. It does NOT programmatically invoke operating system firewall utilities (such as `iptables` or Windows Defender Firewall) nor automatically inject dynamic IP `deny` directives into live Nginx configurations. Live traffic filtering is performed by compiled virtual patch rules (URI and query regex rules) deployed via `VirtualPatchService`.
 
 ---
 
@@ -252,7 +260,7 @@ graph TD
     subgraph Heuristic["Heuristic & Statistical Engines"]
         ZScore[Z-Score Anomaly Detector]
         DevModel[Baseline Deviation Evaluator]
-        UnknownFlags[Zero-Day / Unknown Threat Flags]
+        UnknownFlags[Unknown Threat Indicators]
     end
 
     subgraph Correlation["Threat Intelligence Correlation"]
@@ -288,13 +296,13 @@ graph TD
 4. **Contextual Risk Scoring**:
    - Calculates dynamic risk scores (0–100) using a transparent, multi-factor formula:
      $$\text{Risk Score} = w_1 \cdot \text{CVSS} + w_2 \cdot \text{EPSS} + w_3 \cdot \text{KEV Status} + w_4 \cdot \text{Asset Criticality} + w_5 \cdot \text{Exposure Level}$$
-   - Every score is accompanied by an explainability narrative for executive and technical audiences.
+   - Accompanied by explainability narratives for operational clarity.
 
 ---
 
-## 6. Operational & Environmental Realities for Indian SMBs
+## 6. Operational Realities for Indian SMBs & Regulatory Alignment
 
-PREVENT-X was engineered from day one to operate within the infrastructure, financial, and operational constraints of Indian digital businesses:
+PREVENT-X was engineered to operate within the infrastructure, financial, and operational constraints of Indian digital businesses:
 
 1. **Low-Overhead Architecture**:
    - Does not require multi-node Kubernetes clusters, distributed Kafka clusters, or heavy commercial SIEM licenses.
@@ -302,12 +310,12 @@ PREVENT-X was engineered from day one to operate within the infrastructure, fina
 
 2. **Zero Code Disruption**:
    - Small businesses frequently run outsourced or commercial-off-the-shelf software where source code is inaccessible or modifying it risks voiding vendor support.
-   - PREVENT-X operates entirely at the network reverse-proxy layer, providing instant compensating protection without changing a single line of backend application code.
+   - Operates entirely at the network reverse-proxy layer, providing compensating protection without modifying backend application code.
 
-3. **Regulatory Alignment with Indian Law**:
-   - **DPDP Act 2023 Compliance**: Implements the technical safeguards mandated under Section 8(5) of the Digital Personal Data Protection Act to protect personal data from unauthorized disclosure and breach.
-   - **CERT-In Incident Reporting**: Features automated 6-hour incident aggregation, MITRE ATT&CK categorization, and pre-formatted export summaries ready for submission to the Indian Computer Emergency Response Team.
-   - **Data Localization**: Database architecture and storage retention models keep all customer traffic, logs, and evidence strictly within local Indian jurisdiction.
+3. **Technical Safeguards Supporting Indian Regulatory Frameworks**:
+   - **DPDP Act 2023 Safeguards**: Implements technical safeguards aligned with selected DPDP Act requirements (such as access controls, session timeouts, and encrypted transport) to support data fiduciaries in protecting personal data.
+   - **CERT-In Incident Management Support**: Features security controls designed to support relevant CERT-In requirements, including 6-hour incident aggregation, MITRE ATT&CK categorization, and structured incident timelines.
+   - **Regulatory Notice**: PREVENT-X does not provide or claim formal regulatory certification. Full statutory compliance remains the responsibility of the operating enterprise.
 
 ---
 
@@ -320,7 +328,7 @@ PREVENT-X underwent multi-threaded performance and concurrency stress testing ac
    - Conflicting concurrent deployments on the same application scope are safely serialized or rejected with clear lock conflict audit records, preventing race conditions.
 2. **Reverse Proxy Throughput & Overhead**:
    - Native Nginx 1.26.2 introduces sub-millisecond proxy latency (< 1.2 ms average overhead) while inspecting and enforcing compiled virtual patch rules.
-   - High-throughput benign traffic passes cleanly with 200 OK responses while malicious probes are terminated at the reverse proxy boundary within 0.8 ms, protecting upstream server resources from denial-of-service load.
+   - Benign traffic passes cleanly with 200 OK responses while malicious probes matching rule signatures are terminated at the reverse proxy boundary within 0.8 ms, protecting upstream server resources.
 3. **Worker Failover & Task Reliability**:
    - Celery tasks for active discovery, vulnerability synchronization, and validation runs are idempotent.
    - Interrupted tasks or worker restarts gracefully recover without leaving orphaned database locks or uncommitted transactions.
@@ -329,7 +337,7 @@ PREVENT-X underwent multi-threaded performance and concurrency stress testing ac
 
 ## 8. Verification & Test Matrix
 
-The complete PREVENT-X platform has been validated through rigorous, multi-layered automated test suites spanning unit, integration, distributed reliability, and full end-to-end workflows:
+The PREVENT-X platform has been validated through multi-layered automated test suites spanning unit, integration, distributed reliability, and full end-to-end workflows:
 
 ### 8.1 Backend Pytest Test Matrix (146 Tests Passed)
 
@@ -402,61 +410,40 @@ dist/assets/index-0QE2dRFN.js   609.92 kB │ gzip: 143.24 kB
 
 ---
 
-## 9. Deployment & Infrastructure Architecture
+## 9. Deployment Verification & Environmental Boundaries
 
-PREVENT-X supports two production-grade deployment topologies:
-
-### 9.1 Native Deployment (Verified on Windows / Linux Host)
-- **Database**: PostgreSQL 16 server running locally on dedicated port (e.g. `54320` or standard `5432`).
+### 9.1 Native Local Standalone Verification (Verified)
+The PREVENT-X implementation has been empirically executed and verified in a **native local standalone environment** on Windows 11:
+- **Database**: PostgreSQL 16 server running locally on dedicated port `54320`.
 - **Cache & Broker**: Redis server running on port `6379`.
-- **Worker Daemon**: Celery worker running under Python virtual environment (`solo` pool on Windows, prefork on Linux).
+- **Worker Daemon**: Celery worker running under Python virtual environment (`solo` pool).
 - **Web API**: FastAPI ASGI application served via Uvicorn.
-- **Reverse Proxy**: Native Nginx 1.26.2 binary managing dynamic runtime virtual patch configurations.
-- **Frontend SPA**: React 18 production build served via static web server or reverse proxy.
+- **Reverse Proxy**: Native Nginx 1.26.2 binary managing dynamic runtime virtual patch configurations on port `8085`.
+- **Frontend SPA**: React 18 production build verified via Vite test runner and production bundler.
 
-### 9.2 Containerized Docker Compose Stack (`docker-compose.yml`)
-For container-native environments, PREVENT-X includes a production-grade multi-container specification:
-- `preventx-postgres`: PostgreSQL 16 Alpine with named volume persistence and custom initialization scripts.
-- `preventx-redis`: Redis 7 Alpine configured with persistent append-only storage and ACL restrictions.
-- `preventx-backend`: FastAPI Python 3.10 production container with automated healthcheck probes.
-- `preventx-celery-worker`: Celery background worker container sharing the backend application codebase.
-- `preventx-frontend`: Multi-stage Dockerfile compiling React/Vite into an optimized static bundle.
-- `preventx-gateway`: Edge Nginx container routing `/api` traffic to backend, static assets to frontend, and managing WAF virtual patches.
+### 9.2 Containerized Docker Stack (Untested in Runtime on Current Host)
+- While a complete [docker-compose.yml](file:///c:/Users/YOGESH/Desktop/PREVENT-X/docker-compose.yml) and Dockerfiles (`infrastructure/docker/backend.Dockerfile`, `infrastructure/docker/frontend.Dockerfile`) are provided and structurally validated, **containerized runtime execution has not been verified on this development machine** because Docker CLI / Docker Desktop is not installed on the host.
+- Consequently, containerized production deployment on Linux or Kubernetes clusters represents an **untested environment** from the perspective of this test evidence report.
 
----
-
-## 10. Environmental Limitations & Classification of Claims
-
-To maintain complete transparency and technical honesty, all system capabilities are explicitly classified into verified, unverified, and environmental limitations:
-
-### 10.1 Verified Capabilities
-1. **Full 12-Module System Integration**: All twelve modules (`MOD-01` to `MOD-12`) are operational, registered in `definitions.py`, and integrated into the unified platform.
-2. **17-Step Controlled E2E Security Workflow**: Successfully executed against real native Nginx on port 8085 and mock upstream on port 8086 with 100% pass rate.
-3. **Live Reverse-Proxy Virtual Patching**: Nginx blocks SQL injection (`UNION SELECT`) with 403 Forbidden while allowing benign requests with 200 OK.
-4. **Automated Security Validation**: 21 non-destructive test probes executed against live Nginx with 100% pass rate and zero false positives.
-5. **Atomic Rollback & SHA-256 Verification**: Restores clean baseline configurations and verifies SHA-256 integrity while maintaining proxy uptime.
-6. **Multi-Tenant Scoping & Advisory Locking**: Verified across independent database sessions and processes.
-7. **Connection-Level IP Pinning**: Verified socket-level pinning preventing SSRF and DNS rebinding.
-
-### 10.2 Environmental Limitations
-1. **Docker Daemon Absence on Host**: The primary evaluation host runs Windows 11 without Docker Desktop or Docker CLI installed. Consequently, native Windows binaries (PostgreSQL 16 on 54320, Redis 8.10.3 on 6379, and Nginx 1.26.2) were used for live runtime execution. Complete `docker-compose.yml` and Dockerfiles are verified structurally for Linux deployment.
-2. **Local Controlled Testing vs External Probing**: Active scans and exploit validations are strictly constrained to explicitly authorized local loopback test harnesses (`127.0.0.1:8085` / `8086`) and approved domains, preventing unauthorized scanning of third-party public infrastructure in compliance with Indian cyber laws.
+### 9.3 False Positive Claims Boundary
+- **Empirical Validation Result**: In the automated 21-test security validation suite executed against the baseline test service, **zero false positives occurred** (all legitimate test endpoints returned 200 OK, and all malicious probe patterns were blocked).
+- **Boundary Disclaimer**: This empirical result applies strictly to the tested 21-probe validation suite and baseline configuration. The platform **does not guarantee zero false positives** across arbitrary, untested, or highly complex custom enterprise web applications.
 
 ---
 
-## 11. Future Work & Production Roadmap
+## 10. Future Work & Production Roadmap
 
-1. **Distributed Nginx Clustered Reloading**: Extend the reverse-proxy manager to push compiled configurations across distributed clusters of Nginx nodes using Consul or etcd synchronization.
-2. **Hardware Security Module (HSM) Integration**: Integrate with Indian cloud HSMs and KMS providers (AWS KMS Mumbai, GCP Cloud KMS Delhi) for encryption key management under DPDP regulations.
-3. **Automated WAF ModSecurity / Coraza Integration**: Expand rule compilation beyond native Nginx regex directives to include Coraza WAF WebAssembly (WASM) filters for advanced body inspection.
-4. **Direct CERT-In Incident API Connector**: Implement automated STIX/TAXII export for one-click compliance reporting to CERT-In.
+1. **Host-Level Firewall Integration**: Develop active system plugins for `iptables` / `nftables` (Linux) and Windows Filtering Platform to translate `BLOCK_SOURCE_IP` containment actions into automated kernel-level packet drops.
+2. **Containerized Linux Integration Testing**: Execute the complete test suite within a verified Linux Docker Engine and Kubernetes environment.
+3. **Clustered Nginx Synchronization**: Extend configuration reloading across multi-node proxy pools using Consul or etcd consensus.
+4. **Automated WAF WASM Engines**: Incorporate Coraza WebAssembly filters for deep inspection of multipart form bodies.
 
 ---
 
-## 12. Conclusion & Engineering Sign-Off
+## 11. Conclusion & Technical Assessment
 
-PREVENT-X Phase 9 successfully completes the implementation, integration, end-to-end verification, and production readiness of the entire cyber defense platform. By uniting attack surface intelligence, vulnerability analysis, evidence-backed attack path mapping, Zero Trust assessment, deterministic virtual patching, and verified atomic rollback into an intuitive centralized portal, PREVENT-X delivers a practical, high-impact cybersecurity defense platform tailored for Indian digital SMBs.
+PREVENT-X Phase 9 successfully demonstrates the technical integration, operational feasibility, and automated verification of an autonomous virtual patching and cyber defense platform. By uniting attack surface intelligence, vulnerability mapping, evidence-backed attack path graphs, Zero Trust assessment, deterministic rule compilation, and verified atomic rollback, the platform provides an effective compensating defense model.
 
-All 146 backend tests, 48 frontend tests, production UI builds, and the 17-step end-to-end security workflow have been verified with complete technical evidence.
+All 146 backend tests, 48 frontend tests, production bundle compilation, and the 17-step end-to-end security workflow have been verified with complete empirical evidence within the documented environmental boundaries.
 
-**Engineering Sign-Off**: PREVENT-X Phase 9 Complete. Production Ready.
+**Technical Status**: PREVENT-X Phase 9 Verified in Native Standalone Environment.

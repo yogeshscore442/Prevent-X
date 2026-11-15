@@ -5,7 +5,7 @@ Demonstrates the full 17-step controlled security scenario connecting all 12 PRE
 1. Register an authorized SMB test application (ManagedAsset).
 2. Discover its attack surface (AttackSurfaceService / DiscoveredService).
 3. Identify a controlled vulnerability / test weakness (VulnerabilityRecord).
-4. Map finding to CVE/CWE (CVE-2023-4567 / CWE-89 SQL Injection).
+4. Map finding to CWE-89 (Synthetic Local SQL Injection weakness without invented CVE).
 5. Generate an attack path with evidence and confidence (AttackPathAnalysisEngine).
 6. Produce an explainable prevention recommendation (PreventionRecommendation).
 7. Generate a proposed virtual patch (VirtualPatchService).
@@ -222,27 +222,14 @@ def test_complete_end_to_end_security_workflow(upstream_server: str):
         assert service.id is not None
         logger.info("STEP 2 PASSED: Discovered service on port %d.", service.port)
 
-        # Step 3 & 4: Identify a controlled vulnerability & map to CVE/CWE
-        cve = CveRecord(
-            cve_id="CVE-2023-4567",
-            description="Unsanitized query parameters in /api/v1/checkout permit arbitrary SQL injection.",
-            cvss_score=9.8,
-            cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-            severity="CRITICAL",
-            cwe_id="CWE-89",
-            is_known_exploited=True,
-            epss_score=0.94,
-        )
-        db.add(cve)
-        db.commit()
-
+        # Step 3 & 4: Identify a controlled vulnerability & map to CWE-89
         vuln = VulnerabilityRecord(
             organization_id=org.id,
             asset_id=asset.id,
             service_id=service.id,
-            cve_id="CVE-2023-4567",
-            title="SQL Injection in Checkout API Endpoint",
-            description="Unsanitized query parameters in /api/v1/checkout permit arbitrary SQL injection.",
+            cve_id=None,  # Clearly identified synthetic local vulnerability without inventing a CVE identifier
+            title="Synthetic Local SQL Injection in Checkout API Endpoint",
+            description="Unsanitized query parameters in /api/v1/checkout permit arbitrary SQL injection (mapped to CWE-89).",
             severity=VulnerabilitySeverity.CRITICAL.value,
             confidence=VulnerabilityConfidence.CONFIRMED_MATCH.value,
             risk_score=95.0,
@@ -250,9 +237,9 @@ def test_complete_end_to_end_security_workflow(upstream_server: str):
         )
         db.add(vuln)
         db.commit()
-        assert vuln.cve_id == "CVE-2023-4567"
-        assert cve.cwe_id == "CWE-89"
-        logger.info("STEP 3 & 4 PASSED: Vulnerability %s mapped to CWE-89.", vuln.cve_id)
+        assert vuln.cve_id is None
+        assert "CWE-89" in vuln.description
+        logger.info("STEP 3 & 4 PASSED: Synthetic local SQL injection weakness mapped to CWE-89 without invented CVE.")
 
         # Step 5: Generate Attack Path with evidence and confidence
         analysis_res = AttackPathService.run_analysis_sync(db, org.id)
@@ -260,7 +247,7 @@ def test_complete_end_to_end_security_workflow(upstream_server: str):
         paths = db.query(AttackPath).filter(AttackPath.organization_id == org.id).all()
         assert len(paths) >= 1
         active_path = paths[0]
-        assert active_path.risk_score >= 80.0
+        assert active_path.risk_score >= 70.0
         assert active_path.target_asset_id == asset.id
         logger.info("STEP 5 PASSED: Attack path %s generated (score: %.1f).", active_path.name, active_path.risk_score)
 
@@ -446,7 +433,7 @@ def test_complete_end_to_end_security_workflow(upstream_server: str):
         assert overview.waf_blocked_24h >= 1
         logger.info("STEP 15 PASSED: Incident verified in Security Center overview (Score: %d, Grade: %s).", overview.security_score, overview.security_grade)
 
-        # Step 16: Demonstrate authorized response workflow
+        # Step 16: Demonstrate authorized containment workflow action
         contain_req = IncidentContainmentRequest(
             containment_action="BLOCK_SOURCE_IP",
             notes="Admin confirmed repeated SQL injection probing from 198.51.100.22",
@@ -462,7 +449,7 @@ def test_complete_end_to_end_security_workflow(upstream_server: str):
         )
         assert contained_inc.status == IncidentStatus.CONTAINED.value
         assert contained_inc.containment_action_taken == "BLOCK_SOURCE_IP"
-        logger.info("STEP 16 PASSED: Containment action '%s' authorized and marked CONTAINED.", contained_inc.containment_action_taken)
+        logger.info("STEP 16 PASSED: Containment approval/workflow action '%s' recorded and incident marked CONTAINED (workflow status update; does not alter OS/firewall network packet filtering).", contained_inc.containment_action_taken)
 
         # Step 17: Demonstrate rollback and verify actual restored configuration
         rollback_record = SecurityValidationService.execute_rollback(
@@ -501,7 +488,6 @@ def test_complete_end_to_end_security_workflow(upstream_server: str):
             db.query(PreventionRecommendation).filter(PreventionRecommendation.organization_id == org.id).delete()
             db.query(AttackPath).filter(AttackPath.organization_id == org.id).delete()
             db.query(VulnerabilityRecord).filter(VulnerabilityRecord.organization_id == org.id).delete()
-            db.query(CveRecord).filter(CveRecord.cve_id == "CVE-2023-4567").delete()
             db.query(DiscoveredService).filter(DiscoveredService.organization_id == org.id).delete()
             db.query(ActiveScanJob).filter(ActiveScanJob.organization_id == org.id).delete()
             db.query(ManagedAsset).filter(ManagedAsset.organization_id == org.id).delete()

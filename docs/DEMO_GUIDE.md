@@ -4,7 +4,8 @@
 **Project**: PREVENT-X — Autonomous AI-Era Cyber Defense & Virtual Patching Platform  
 **Audience**: Academic Review Board, Project Evaluators & Cybersecurity Examiners  
 **Evaluation Time**: 15–20 minutes  
-**Prerequisites**: Active PREVENT-X backend (`:8000`), frontend (`:3000`), PostgreSQL (`:54320`), Redis (`:6379`), and Celery worker.
+**Prerequisites**: Active PREVENT-X backend (`:8000`), frontend (`:3000`), PostgreSQL (`:54320`), Redis (`:6379`), and Celery worker.  
+**Compliance Disclaimer**: Technical safeguards aligned with selected DPDP Act requirements; Security controls designed to support relevant CERT-In requirements. Does not claim formal legal or regulatory certification.
 
 ---
 
@@ -19,14 +20,14 @@ PREVENT-X addresses the critical cybersecurity crisis facing Indian Small and Me
 ```mermaid
 flowchart LR
     PhaseA["1. Login & Posture"] --> PhaseB["2. Discovery"]
-    PhaseB --> PhaseC["3. CVE Mapping"]
+    PhaseB --> PhaseC["3. CWE Mapping"]
     PhaseC --> PhaseD["4. Attack Paths"]
     PhaseD --> PhaseE["5. Zero Trust"]
     PhaseE --> PhaseF["6. Virtual Patch & Staging"]
     PhaseF --> PhaseG["7. Human Approval & Deploy"]
     PhaseG --> PhaseH["8. Live Exploit Block"]
     PhaseH --> PhaseI["9. Event Correlation (T1190)"]
-    PhaseI --> PhaseJ["10. Containment & Rollback"]
+    PhaseI --> PhaseJ["10. Workflow Containment & Rollback"]
 ```
 
 ---
@@ -40,7 +41,7 @@ flowchart LR
 3. **What to Point Out to Evaluators**:
    - The unified **Security Center** (`/security-center`) displays an executive-level **Security Posture Score** (0–100 scale) and security grade (A through F).
    - Core operational KPIs: Open Critical Incidents, WAF Blocks in Last 24 Hours, Vulnerabilities in Active Attack Paths, and Zero Trust Compliance.
-   - CERT-In compliance telemetry: Chronological timeline ready for 6-hour statutory reporting.
+   - CERT-In reporting support telemetry: Chronological incident timeline and structured event records designed to support relevant CERT-In 6-hour reporting requirements.
 
 ---
 
@@ -58,14 +59,14 @@ flowchart LR
 
 ---
 
-### Phase C: Vulnerability Intelligence & CVE/CWE Mapping (1.5 Minutes)
+### Phase C: Vulnerability Intelligence & CWE-89 Weakness Mapping (1.5 Minutes)
 
 1. Navigate to **Vulnerability Mapping** (`/vulnerabilities`).
-2. Show the mapped vulnerability record:
-   - **ID**: `CVE-2023-4567` | **Weakness**: `CWE-89 (SQL Injection)`.
+2. Show the mapped weakness record:
+   - **Weakness**: `CWE-89 (SQL Injection)` | **Type**: Synthetic Local Test Weakness (`cve_id: None`).
    - **Target**: `Payment Gateway API` (`/api/v1/checkout`).
-   - **Threat Metrics**: CVSS v3.1: `9.8 Critical` | EPSS Score: `0.94` (Top 1% exploitation likelihood) | CISA KEV: `Known Exploited`.
-3. **Key Evaluator Insight**: Point out that PREVENT-X does not just show raw CVE lists; it correlates vulnerability intelligence with discovered running services to calculate an empirical contextual risk score.
+   - **Risk Score**: `79.0 (High Severity)`.
+3. **Key Evaluator Insight**: Point out that PREVENT-X adheres to strict testing integrity by explicitly identifying local synthetic test vulnerabilities mapped to formal CWE classifications, rather than fabricating arbitrary or rejected CVE identifiers.
 
 ---
 
@@ -79,7 +80,7 @@ flowchart LR
    - Target crown jewel: Payment processing database.
 4. Point out the **MITRE ATT&CK Mapping**: Technique `T1190: Exploit Public-Facing Application`.
 5. Point out the **Prevention Recommendation**:
-   - `Deploy Virtual Patch Rule for CVE-2023-4567 on Payment Gateway API`.
+   - `Deploy Virtual Patch Rule for CWE-89 (SQL Injection) on Payment Gateway API`.
    - Category: `VIRTUAL_PATCH`, Risk Reduction: `HIGH`, Implementation Complexity: `LOW`.
 
 ---
@@ -89,7 +90,7 @@ flowchart LR
 1. Navigate to **Zero Trust Security** (`/zero-trust`).
 2. Show the continuous trust evaluation matrix:
    - Assets are evaluated across Identity, Network Exposure, Vulnerability Posture, and Access Control.
-   - Assets with unpatched critical CVEs are classified as **`RESTRICTED`** or **`UNTRUSTED`** (never implicitly trusted).
+   - Assets with unpatched critical weaknesses are classified as **`RESTRICTED`** or **`UNTRUSTED`** (never implicitly trusted).
    - Show actionable Least-Privilege Policy Recommendations (e.g. enforce strict reverse-proxy inspection and IP rate limiting).
 
 ---
@@ -108,7 +109,7 @@ flowchart LR
    - Emphasize the automated syntax validation gate (`nginx -t`) executed before saving.
 4. Navigate to **Security Validation** (`/security-validation`) and trigger a validation job:
    - PREVENT-X runs its non-destructive **21-test security suite** against the staging proxy.
-   - Show the 100% pass rate: SQLi blocked, XSS blocked, path traversal blocked, and benign requests allowed.
+   - Point out that **zero false positives occurred in the tested validation suite against the baseline test service** (all benign requests passed, all malicious probes blocked). Clarify that this reflects empirical test results, not an absolute guarantee across all arbitrary third-party applications.
 
 ---
 
@@ -173,11 +174,11 @@ Server: nginx
 
 ---
 
-### Phase J: Authorized Containment & Reliable Atomic Rollback (2 Minutes)
+### Phase J: Authorized Containment Workflow & Reliable Atomic Rollback (2 Minutes)
 
 1. In the Incident Details panel, click **"Execute Containment"**:
    - Action: `BLOCK_SOURCE_IP`.
-   - Status updates immediately to **`CONTAINED`** with operator sign-off.
+   - **Important Technical Note**: Explain to evaluators that this action operates as an **administrative workflow and audit status update**, marking the incident as `CONTAINED` with recorded human sign-off; it does not invoke host-level OS/firewall (`iptables`) packet drops. Active traffic filtering is enforced by Nginx virtual patch rules.
 2. Navigate to **Security Validation** (`/security-validation`) -> **Rollback Manager**:
    - Click **"Execute Rollback"** to return to the verified clean baseline.
    - PREVENT-X verifies the SHA-256 integrity checksum of the baseline configuration snapshot.
@@ -198,7 +199,8 @@ curl -i "http://127.0.0.1:8085/api/v1/checkout?item=1001"
 | **How do you prevent a bad rule from breaking the site?** | Through a 3-layer safety gate: (1) Native `nginx -t` pre-reload syntax validation, (2) automated staging validation running 21 non-destructive test probes, and (3) automated rollback with SHA-256 snapshot verification if failure thresholds are breached. |
 | **Is the AI hallucinating rules?** | No. Rule synthesis is deterministic AST pattern compilation derived from formal CVE/CWE indicators and HTTP URI match specifications. AI is used strictly for contextual risk scoring and statistical anomaly detection (Z-scores). |
 | **How does PREVENT-X handle multi-tenancy?** | Strict tenant isolation via `TenantScopedRepositoryBase` (all SQL queries scoped by `organization_id`), isolated JWT tenant claims, and independent PostgreSQL advisory locks per application port. |
-| **How does this help with Indian law (DPDP / CERT-In)?** | Implements technical safeguards required by DPDP Section 8(5) to prevent personal data breaches, and provides automated 6-hour incident aggregation with 180-day immutable audit logs under CERT-In directives. |
+| **Does PREVENT-X claim legal DPDP / CERT-In compliance certification?** | No. PREVENT-X provides technical safeguards aligned with selected DPDP Act requirements and security controls designed to support relevant CERT-In incident management requirements; it does not claim legal or statutory regulatory certification. |
+| **What environments have been verified?** | Verified in a native standalone environment (Windows 11 with PostgreSQL 16, Redis, Celery, and native Nginx). Clustered multi-node or containerized Docker execution represents an untested environment on the current host. |
 
 ---
 
@@ -206,8 +208,8 @@ curl -i "http://127.0.0.1:8085/api/v1/checkout?item=1001"
 
 | Project Grading Criterion | PREVENT-X Implementation | Demonstrated In |
 | :--- | :--- | :--- |
-| **Architectural Complexity** | 12 integrated modules, microservices, asynchronous Celery queues, PostgreSQL advisory locks, Redis pub/sub, native Nginx proxy | Phases A, G, H |
+| **Architectural Complexity** | 12 integrated modules, asynchronous Celery queues, PostgreSQL advisory locks, Redis pub/sub, native Nginx proxy | Phases A, G, H |
 | **Security & Cryptography** | Connection-level IP pinning (`SafePinningBackend`), bcrypt passwords, JWT authentication, SHA-256 integrity hashes, SSRF defenses | Phases B, G, J |
 | **Real-Time Data Processing** | Nginx structured log parsing, Server-Sent Events (SSE), sliding-window event aggregation, dynamic security score calculation | Phases H, I |
 | **Reliability & Fault Tolerance** | Pre-deployment staging validation, automated auto-rollback, zero-downtime Nginx reloads, distributed deployment locking | Phases F, G, J |
-| **Industry & Social Relevance** | Solves critical cyber threat and DPDP compliance challenges for Indian SMB digital businesses with zero application code modification | Phases A, C, J |
+| **Industry & Practical Relevance** | Delivers compensating virtual patch controls for Indian SMB digital businesses facing severe patching lags without modifying application source code | Phases A, C, J |
