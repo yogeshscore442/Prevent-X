@@ -23,7 +23,7 @@ from backend.app.security.permissions import SystemRole
 from backend.app.security.rate_limiter import rate_limiter
 from backend.app.services.bootstrap_service import initialize_system_roles_and_permissions
 
-TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL") or settings.DATABASE_URL
 if not TEST_DATABASE_URL or not TEST_DATABASE_URL.startswith("postgresql"):
     TEST_DATABASE_URL = "sqlite:///:memory:"
     test_engine = create_engine(

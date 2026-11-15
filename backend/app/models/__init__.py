@@ -115,6 +115,22 @@ from backend.app.models.future_entities import (
     DeploymentRecord,
     SecurityEventRecord,
 )
+from backend.app.models.network_defense import (
+    FirewallRuleDirection,
+    FirewallRuleAction,
+    FirewallRuleProtocol,
+    FirewallEnforcementStatus,
+    FirewallRule,
+    DynamicIPBlockStatus,
+    DynamicIPBlock,
+    RateLimitingAlgorithm,
+    RateLimitScope,
+    RateLimitPolicy,
+    HoneypotProbe,
+    GeoIPPolicyAction,
+    GeoIPPolicy,
+    TrafficReplayReport,
+)
 
 __all__ = [
     "Base",

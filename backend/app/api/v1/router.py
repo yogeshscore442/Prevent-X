@@ -18,6 +18,15 @@ from backend.app.api.v1.endpoints import (
     virtual_patching,
     security_validation,
     monitoring,
+    firewall,
+    dynamic_blocking,
+    rate_limiting,
+    payload_normalization,
+    advanced_detection,
+    traffic_replay,
+    honeypot,
+    geoip,
+    ml_classifier,
 )
 
 api_router = APIRouter()
@@ -61,6 +70,22 @@ api_router.include_router(security_validation.router)
 
 # Real-Time Monitoring & Centralized Security Management Platform (MOD-09, MOD-12)
 api_router.include_router(monitoring.router)
+
+# Advanced Network Defense: Windows Defender Firewall Integration
+api_router.include_router(firewall.router)
+api_router.include_router(dynamic_blocking.router)
+api_router.include_router(rate_limiting.router)
+api_router.include_router(payload_normalization.router)
+api_router.include_router(advanced_detection.router)
+api_router.include_router(traffic_replay.router)
+api_router.include_router(honeypot.router)
+api_router.include_router(geoip.router)
+api_router.include_router(ml_classifier.router)
+
+
+
+
+
 
 
 

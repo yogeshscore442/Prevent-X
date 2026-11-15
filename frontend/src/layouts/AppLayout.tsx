@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import {
+  Shield,
   ShieldAlert,
   ShieldCheck,
   Server,
@@ -44,6 +45,7 @@ export const AppLayout: React.FC = () => {
     { name: 'Attack Paths', path: '/attack-paths', icon: Workflow },
     { name: 'Zero Trust & Resilience', path: '/zero-trust', icon: ShieldCheck },
     { name: 'Virtual Patching', path: '/virtual-patching', icon: ShieldAlert },
+    { name: 'Network Defense', path: '/network-defense', icon: Shield },
     { name: 'Security Validation', path: '/security-validation', icon: CheckCheck },
     { name: 'Organizations', path: '/organizations', icon: Building2 },
     { name: 'Users & Access', path: '/users', icon: Users },

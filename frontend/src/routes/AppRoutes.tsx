@@ -13,6 +13,7 @@ import { ZeroTrustPage } from '@/pages/ZeroTrustPage';
 import { VirtualPatchingPage } from '@/pages/VirtualPatchingPage';
 import { SecurityValidationPage } from '@/pages/SecurityValidationPage';
 import { SecurityCenterPage } from '@/pages/SecurityCenterPage';
+import { NetworkDefensePage } from '@/pages/NetworkDefensePage';
 import { OrganizationsPage } from '@/pages/OrganizationsPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { RolesPage } from '@/pages/RolesPage';
@@ -90,6 +91,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/attack-paths" element={<AttackPathsPage />} />
         <Route path="/zero-trust" element={<ZeroTrustPage />} />
         <Route path="/virtual-patching" element={<VirtualPatchingPage />} />
+        <Route path="/network-defense" element={<NetworkDefensePage />} />
         <Route path="/security-validation" element={<SecurityValidationPage />} />
         <Route path="/security-center" element={<SecurityCenterPage />} />
         <Route path="/organizations" element={<OrganizationsPage />} />
