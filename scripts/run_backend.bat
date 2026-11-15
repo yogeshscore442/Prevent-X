@@ -9,13 +9,13 @@ echo ===========================================================================
 echo                 PREVENT-X BACKEND API SERVER
 echo ==============================================================================
 echo [*] Working Directory: %CD%
-echo [*] Listening on     : http://127.0.0.1:%PORT%
-echo [*] OpenAPI Docs     : http://127.0.0.1:%PORT%/api/v1/docs
+echo [*] Local URL         : http://127.0.0.1:%PORT%
+echo [*] OpenAPI Docs      : http://127.0.0.1:%PORT%/api/v1/docs
 echo ==============================================================================
 echo.
 
 call .venv\Scripts\activate.bat
-python -m uvicorn backend.app.main:app --host 127.0.0.1 --port %PORT% --reload
+python -m uvicorn backend.app.main:app --host 0.0.0.0 --port %PORT% --reload
 
 if errorlevel 1 (
     echo.

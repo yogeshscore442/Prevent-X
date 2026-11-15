@@ -91,10 +91,11 @@ export const VulnerabilitiesPage: React.FC = () => {
       if (kevOnly) params.is_kev = true;
 
       const data = await vulnerabilityApi.listRecords(params);
-      setRecords(data.items);
-      setTotalRecords(data.total);
+      setRecords(data?.items || []);
+      setTotalRecords(data?.total || 0);
     } catch (err: any) {
       setError(err?.response?.data?.detail?.message || 'Failed to load vulnerability records.');
+      setRecords([]);
     } finally {
       setIsLoading(false);
     }
@@ -107,10 +108,11 @@ export const VulnerabilitiesPage: React.FC = () => {
         query: cveSearch || undefined,
         limit: 50,
       });
-      setCveList(data.items);
-      setCveTotal(data.total);
+      setCveList(data?.items || []);
+      setCveTotal(data?.total || 0);
     } catch (err) {
       console.error('Failed to search CVE catalog', err);
+      setCveList([]);
     } finally {
       setIsLoadingCves(false);
     }
@@ -120,9 +122,10 @@ export const VulnerabilitiesPage: React.FC = () => {
     setIsLoadingJobs(true);
     try {
       const data = await vulnerabilityApi.listScanJobs(20);
-      setScanJobs(data);
+      setScanJobs(Array.isArray(data) ? data : ((data as any)?.items || []));
     } catch (err) {
       console.error('Failed to load scan jobs', err);
+      setScanJobs([]);
     } finally {
       setIsLoadingJobs(false);
     }
@@ -131,7 +134,13 @@ export const VulnerabilitiesPage: React.FC = () => {
   useEffect(() => {
     fetchOverview();
     fetchRecords();
-    api.get<{ items: ManagedAsset[] }>('/assets').then((res) => setAssets(res.data.items || [])).catch(() => {});
+    api
+      .get<{ items: ManagedAsset[] }>('/assets')
+      .then((res) => {
+        const items = Array.isArray(res.data) ? res.data : (res.data?.items || []);
+        setAssets(items);
+      })
+      .catch(() => setAssets([]));
   }, []);
 
   useEffect(() => {
@@ -342,7 +351,7 @@ export const VulnerabilitiesPage: React.FC = () => {
 
           <div className="bg-navy-900 border border-navy-800 rounded-xl p-4">
             <div className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider">Avg Contextual Risk</div>
-            <div className="text-2xl font-bold text-cyan-400 mt-1">{overview.average_risk_score.toFixed(1)}</div>
+            <div className="text-2xl font-bold text-cyan-400 mt-1">{(overview?.average_risk_score ?? 0).toFixed(1)}</div>
             <div className="text-xs text-slate-400 mt-1">Scale 0 - 100</div>
           </div>
 
@@ -358,11 +367,10 @@ export const VulnerabilitiesPage: React.FC = () => {
       <div className="flex border-b border-navy-800 gap-6 text-sm font-medium">
         <button
           onClick={() => setActiveTab('inventory')}
-          className={`pb-3 transition-colors flex items-center gap-2 border-b-2 ${
-            activeTab === 'inventory'
-              ? 'border-rose-500 text-rose-400 font-semibold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+          className={`pb-3 transition-colors flex items-center gap-2 border-b-2 ${activeTab === 'inventory'
+            ? 'border-rose-500 text-rose-400 font-semibold'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
         >
           <Bug className="w-4 h-4" />
           <span>Vulnerability Inventory ({totalRecords})</span>
@@ -370,11 +378,10 @@ export const VulnerabilitiesPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('catalog')}
-          className={`pb-3 transition-colors flex items-center gap-2 border-b-2 ${
-            activeTab === 'catalog'
-              ? 'border-rose-500 text-rose-400 font-semibold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+          className={`pb-3 transition-colors flex items-center gap-2 border-b-2 ${activeTab === 'catalog'
+            ? 'border-rose-500 text-rose-400 font-semibold'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
         >
           <Database className="w-4 h-4" />
           <span>CVE Threat Catalog {cveTotal > 0 && `(${cveTotal})`}</span>
@@ -382,11 +389,10 @@ export const VulnerabilitiesPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('history')}
-          className={`pb-3 transition-colors flex items-center gap-2 border-b-2 ${
-            activeTab === 'history'
-              ? 'border-rose-500 text-rose-400 font-semibold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+          className={`pb-3 transition-colors flex items-center gap-2 border-b-2 ${activeTab === 'history'
+            ? 'border-rose-500 text-rose-400 font-semibold'
+            : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
         >
           <Clock className="w-4 h-4" />
           <span>Scan Execution History</span>
@@ -449,11 +455,10 @@ export const VulnerabilitiesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setKevOnly(!kevOnly)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border ${
-                  kevOnly
-                    ? 'bg-rose-950 text-rose-300 border-rose-700'
-                    : 'bg-navy-950 text-slate-400 border-navy-700 hover:text-slate-200'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border ${kevOnly
+                  ? 'bg-rose-950 text-rose-300 border-rose-700'
+                  : 'bg-navy-950 text-slate-400 border-navy-700 hover:text-slate-200'
+                  }`}
               >
                 <Flame className="w-3.5 h-3.5" />
                 <span>KEV Exploited</span>
@@ -495,7 +500,7 @@ export const VulnerabilitiesPage: React.FC = () => {
                       <tr key={r.id} className="hover:bg-navy-850/50 transition-colors">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-sm text-slate-100">{r.risk_score.toFixed(1)}</span>
+                            <span className="font-mono font-bold text-sm text-slate-100">{(r.risk_score ?? 0).toFixed(1)}</span>
                             {getSeverityBadge(r.severity)}
                           </div>
                         </td>
@@ -505,9 +510,9 @@ export const VulnerabilitiesPage: React.FC = () => {
                           <div className="text-slate-200 font-medium truncate mt-0.5" title={r.title}>
                             {r.title}
                           </div>
-                          {r.cvss_score && (
+                          {r.cvss_score != null && (
                             <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                              CVSS {r.cvss_score.toFixed(1)}
+                              CVSS {Number(r.cvss_score).toFixed(1)}
                             </div>
                           )}
                         </td>
@@ -534,7 +539,7 @@ export const VulnerabilitiesPage: React.FC = () => {
                             )}
                             {r.epss_score !== null && r.epss_score !== undefined && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800">
-                                EPSS {(r.epss_score * 100).toFixed(1)}%
+                                EPSS {(Number(r.epss_score) * 100).toFixed(1)}%
                               </span>
                             )}
                           </div>
@@ -603,7 +608,7 @@ export const VulnerabilitiesPage: React.FC = () => {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
                           {getSeverityBadge(cve.severity)}
-                          {cve.cvss_score && <span className="font-mono text-slate-300">{cve.cvss_score.toFixed(1)}</span>}
+                          {cve.cvss_score != null && <span className="font-mono text-slate-300">{Number(cve.cvss_score).toFixed(1)}</span>}
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -613,9 +618,9 @@ export const VulnerabilitiesPage: React.FC = () => {
                               CISA KEV
                             </span>
                           )}
-                          {cve.epss_score !== null && (
+                          {cve.epss_score !== null && cve.epss_score !== undefined && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800">
-                              EPSS {(cve.epss_score * 100).toFixed(1)}%
+                              EPSS {(Number(cve.epss_score) * 100).toFixed(1)}%
                             </span>
                           )}
                         </div>
@@ -697,12 +702,12 @@ export const VulnerabilitiesPage: React.FC = () => {
             <div className="p-4 bg-navy-950 border border-navy-800 rounded-xl space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Contextual Risk Score</span>
-                <span className="text-xl font-mono font-bold text-cyan-400">{selectedRecord.risk_score.toFixed(1)} / 100</span>
+                <span className="text-xl font-mono font-bold text-cyan-400">{(selectedRecord.risk_score ?? 0).toFixed(1)} / 100</span>
               </div>
               <div className="w-full bg-navy-800 rounded-full h-2">
                 <div
                   className="bg-gradient-to-r from-yellow-500 via-rose-500 to-red-600 h-2 rounded-full"
-                  style={{ width: `${Math.min(100, selectedRecord.risk_score)}%` }}
+                  style={{ width: `${Math.min(100, selectedRecord.risk_score ?? 0)}%` }}
                 />
               </div>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
@@ -764,7 +769,7 @@ export const VulnerabilitiesPage: React.FC = () => {
                   <span className="text-slate-500 block">FIRST EPSS Score:</span>
                   <span className="font-mono font-bold text-cyan-400 mt-1 block">
                     {selectedRecord.epss_score !== null && selectedRecord.epss_score !== undefined
-                      ? `${(selectedRecord.epss_score * 100).toFixed(2)}% Exploit Likelihood`
+                      ? `${(Number(selectedRecord.epss_score) * 100).toFixed(2)}% Exploit Likelihood`
                       : 'N/A'}
                   </span>
                 </div>

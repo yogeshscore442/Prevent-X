@@ -5,9 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 export const SettingsPage: React.FC = () => {
   const { user, activeOrgId } = useAuth();
 
-  const activeMembership = user?.memberships.find(
+  const memberships = user?.memberships || [];
+  const activeMembership = memberships.find(
     (m) => m.organization_id === activeOrgId
-  ) || user?.memberships[0];
+  ) || memberships[0];
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">

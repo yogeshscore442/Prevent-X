@@ -90,10 +90,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasPermission = (permissionCode: string): boolean => {
     if (!user) return false;
     if (user.is_superuser) return true;
-    const currentMembership = user.memberships.find(
+    const currentMembership = (user.memberships || []).find(
       (m) => m.organization_id === activeOrgId
     );
-    return currentMembership ? currentMembership.permissions.includes(permissionCode) : false;
+    return currentMembership ? (currentMembership.permissions || []).includes(permissionCode) : false;
   };
 
   return (

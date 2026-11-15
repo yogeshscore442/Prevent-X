@@ -20,12 +20,16 @@ def main():
     print("PREVENT-X Administrator Bootstrap Utility")
     print("=" * 60)
 
+    import os
+    admin_email = os.environ.get("INITIAL_ADMIN_EMAIL", "admin@preventx.internal")
+    admin_password = os.environ.get("INITIAL_ADMIN_PASSWORD", "AdminPasswordSecure2026!")
+
     db = SessionLocal()
     try:
         req = BootstrapRequest(
             bootstrap_token=settings.BOOTSTRAP_TOKEN,
-            email="admin@preventx.internal",
-            password="AdminPasswordSecure2026!",
+            email=admin_email,
+            password=admin_password,
             full_name="Lead Security Administrator",
             initial_organization_name="Default SMB Enterprise",
             initial_organization_slug="smb-default",
@@ -35,7 +39,8 @@ def main():
         print(f"[+] Message: {res.message}")
         print(f"[+] Root Admin User ID: {res.user_id}")
         print(f"[+] Initial Org ID: {res.organization_id}")
-        print("[+] Credentials: admin@preventx.internal / AdminPasswordSecure2026!")
+        print(f"[+] Administrator: {req.email}")
+        print("[!] SECURITY NOTICE: Rotate default administrator credentials immediately upon first login.")
     except Exception as e:
         print(f"[-] Bootstrap error: {str(e)}")
         sys.exit(1)

@@ -23,9 +23,11 @@ export const OrganizationsPage: React.FC = () => {
     setLoading(true);
     try {
       const resp = await api.get('/organizations');
-      setOrgs(resp.data.items || []);
+      const items = Array.isArray(resp.data) ? resp.data : (resp.data?.items || []);
+      setOrgs(items);
     } catch (err: any) {
       setError(err.response?.data?.detail?.message || 'Failed to load organizations');
+      setOrgs([]);
     } finally {
       setLoading(false);
     }
@@ -104,14 +106,13 @@ export const OrganizationsPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {orgs.map((org) => {
+          {(orgs || []).map((org) => {
             const isCurrent = org.id === activeOrgId;
             return (
               <div
                 key={org.id}
-                className={`p-5 rounded-xl border bg-navy-900 flex flex-col justify-between transition-all ${
-                  isCurrent ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-navy-800'
-                }`}
+                className={`p-5 rounded-xl border bg-navy-900 flex flex-col justify-between transition-all ${isCurrent ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-navy-800'
+                  }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">

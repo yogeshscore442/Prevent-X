@@ -92,10 +92,12 @@ export const SecurityValidationPage: React.FC = () => {
         securityValidationApi.getCanaryPolicy(),
       ]);
 
-      setOverview(overviewData);
-      setJobs(jobsData);
-      setRollbacks(rollbacksData);
-      setCanaryPolicy(canaryData);
+      const safeJobs = Array.isArray(jobsData) ? jobsData : [];
+      const safeRollbacks = Array.isArray(rollbacksData) ? rollbacksData : [];
+      setOverview(overviewData || null);
+      setJobs(safeJobs);
+      setRollbacks(safeRollbacks);
+      setCanaryPolicy(canaryData || null);
 
       if (canaryData) {
         setCanaryForm({
@@ -107,12 +109,14 @@ export const SecurityValidationPage: React.FC = () => {
         });
       }
 
-      if (jobsData.length > 0 && !selectedJob) {
-        setSelectedJob(jobsData[0]);
-        loadJobResults(jobsData[0].id);
+      if (safeJobs.length > 0 && !selectedJob) {
+        setSelectedJob(safeJobs[0]);
+        loadJobResults(safeJobs[0].id);
       }
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || 'Failed to load validation telemetry');
+      setJobs([]);
+      setRollbacks([]);
     } finally {
       setIsLoading(false);
     }
@@ -122,9 +126,10 @@ export const SecurityValidationPage: React.FC = () => {
     try {
       setIsResultsLoading(true);
       const results = await securityValidationApi.getJobResults(jobId);
-      setTestResults(results);
+      setTestResults(Array.isArray(results) ? results : []);
     } catch (err: any) {
       console.error('Failed to load job results:', err);
+      setTestResults([]);
     } finally {
       setIsResultsLoading(false);
     }
@@ -369,11 +374,10 @@ export const SecurityValidationPage: React.FC = () => {
       <div className="flex border-b border-slate-800">
         <button
           onClick={() => setActiveTab('runs')}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'runs'
+          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'runs'
               ? 'border-cyan-500 text-cyan-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <History className="h-4 w-4" />
           Validation Runs & History
@@ -384,11 +388,10 @@ export const SecurityValidationPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('explorer')}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'explorer'
+          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'explorer'
               ? 'border-cyan-500 text-cyan-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <Terminal className="h-4 w-4" />
           Evidence & Test Probes Explorer
@@ -401,11 +404,10 @@ export const SecurityValidationPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('regression')}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'regression'
+          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'regression'
               ? 'border-cyan-500 text-cyan-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <ShieldAlert className="h-4 w-4" />
           WAF Regression & Bypass Matrix
@@ -413,11 +415,10 @@ export const SecurityValidationPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('rollback')}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'rollback'
+          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'rollback'
               ? 'border-cyan-500 text-cyan-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <RotateCcw className="h-4 w-4" />
           Rollback Orchestrator & Snapshots
@@ -428,11 +429,10 @@ export const SecurityValidationPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('canary')}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'canary'
+          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'canary'
               ? 'border-cyan-500 text-cyan-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <Sliders className="h-4 w-4" />
           Canary Safety Policies & Thresholds
@@ -471,31 +471,28 @@ export const SecurityValidationPage: React.FC = () => {
                       <tr
                         key={job.id}
                         onClick={() => handleSelectJob(job)}
-                        className={`hover:bg-slate-800/40 cursor-pointer transition-colors ${
-                          selectedJob?.id === job.id ? 'bg-cyan-950/20 border-l-2 border-cyan-500' : ''
-                        }`}
+                        className={`hover:bg-slate-800/40 cursor-pointer transition-colors ${selectedJob?.id === job.id ? 'bg-cyan-950/20 border-l-2 border-cyan-500' : ''
+                          }`}
                       >
                         <td className="px-4 py-3 font-mono">
                           <div className="font-semibold text-slate-200">
                             {job.id.substring(0, 8)}...
                           </div>
-                          <span className={`inline-block mt-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium ${
-                            job.environment === 'PRODUCTION'
+                          <span className={`inline-block mt-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium ${job.environment === 'PRODUCTION'
                               ? 'bg-purple-950 text-purple-300 border border-purple-800/60'
                               : 'bg-blue-950 text-blue-300 border border-blue-800/60'
-                          }`}>
+                            }`}>
                             {job.environment}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${
-                              job.status === 'PASSED'
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${job.status === 'PASSED'
                                 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
                                 : job.status === 'FAILED'
-                                ? 'bg-red-950 text-red-400 border border-red-800/60'
-                                : 'bg-slate-800 text-slate-300'
-                            }`}
+                                  ? 'bg-red-950 text-red-400 border border-red-800/60'
+                                  : 'bg-slate-800 text-slate-300'
+                              }`}
                           >
                             {job.status === 'PASSED' ? (
                               <CheckCircle2 className="h-3 w-3" />
@@ -583,11 +580,10 @@ export const SecurityValidationPage: React.FC = () => {
                   </span>
                   {selectedJob && (
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                        selectedJob.status === 'PASSED'
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${selectedJob.status === 'PASSED'
                           ? 'bg-emerald-950 text-emerald-400'
                           : 'bg-red-950 text-red-400'
-                      }`}
+                        }`}
                     >
                       {selectedJob.status} ({selectedJob.pass_rate_percentage}%)
                     </span>
@@ -671,9 +667,8 @@ export const SecurityValidationPage: React.FC = () => {
                           <tr
                             key={r.id}
                             onClick={() => setSelectedResultDetail(r)}
-                            className={`hover:bg-slate-800/40 cursor-pointer transition-colors ${
-                              selectedResultDetail?.id === r.id ? 'bg-cyan-950/30 border-l-2 border-cyan-400' : ''
-                            }`}
+                            className={`hover:bg-slate-800/40 cursor-pointer transition-colors ${selectedResultDetail?.id === r.id ? 'bg-cyan-950/30 border-l-2 border-cyan-400' : ''
+                              }`}
                           >
                             <td className="px-4 py-3">
                               <div className="font-semibold text-slate-200">{r.test_name}</div>
@@ -697,36 +692,33 @@ export const SecurityValidationPage: React.FC = () => {
                             </td>
                             <td className="px-4 py-3 font-mono">
                               <span
-                                className={`font-semibold ${
-                                  r.actual_status_code === r.expected_status_code
+                                className={`font-semibold ${r.actual_status_code === r.expected_status_code
                                     ? 'text-emerald-400'
                                     : 'text-red-400'
-                                }`}
+                                  }`}
                               >
                                 {r.actual_status_code ?? 'None'}
                               </span>
                             </td>
                             <td className="px-4 py-3 font-mono">
                               <span
-                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                                  r.actual_decision === 'BLOCKED'
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${r.actual_decision === 'BLOCKED'
                                     ? 'bg-red-950 text-red-300 border border-red-800/60'
                                     : 'bg-emerald-950 text-emerald-300 border border-emerald-800/60'
-                                }`}
+                                  }`}
                               >
                                 {r.actual_decision}
                               </span>
                             </td>
                             <td className="px-4 py-3 font-mono text-slate-400">
-                              {r.latency_ms.toFixed(1)}ms
+                              {r.latency_ms != null ? `${Number(r.latency_ms).toFixed(1)}ms` : '—'}
                             </td>
                             <td className="px-4 py-3 text-right">
                               <span
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                  r.result === 'PASSED'
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${r.result === 'PASSED'
                                     ? 'bg-emerald-950 text-emerald-400'
                                     : 'bg-red-950 text-red-400'
-                                }`}
+                                  }`}
                               >
                                 {r.result === 'PASSED' ? (
                                   <CheckCircle2 className="h-3 w-3" />
@@ -772,7 +764,9 @@ export const SecurityValidationPage: React.FC = () => {
                   </div>
                   <div className="rounded-lg bg-slate-900/60 p-2 border border-slate-800">
                     <span className="text-slate-400">Latency:</span>
-                    <span className="ml-2 font-mono text-emerald-400">{selectedResultDetail.latency_ms.toFixed(2)} ms</span>
+                    <span className="ml-2 font-mono text-emerald-400">
+                      {selectedResultDetail.latency_ms != null ? `${Number(selectedResultDetail.latency_ms).toFixed(2)} ms` : '—'}
+                    </span>
                   </div>
                   <div className="rounded-lg bg-slate-900/60 p-2 border border-slate-800">
                     <span className="text-slate-400">Expected:</span>
@@ -988,13 +982,12 @@ export const SecurityValidationPage: React.FC = () => {
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${
-                              rb.status === 'COMPLETED'
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${rb.status === 'COMPLETED'
                                 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
                                 : rb.status === 'ROLLBACK_FAILED'
-                                ? 'bg-red-950 text-red-400 border border-red-800/60'
-                                : 'bg-amber-950 text-amber-300 border border-amber-800/60'
-                            }`}
+                                  ? 'bg-red-950 text-red-400 border border-red-800/60'
+                                  : 'bg-amber-950 text-amber-300 border border-amber-800/60'
+                              }`}
                           >
                             {rb.status === 'COMPLETED' ? (
                               <CheckCircle2 className="h-3 w-3" />

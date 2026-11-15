@@ -390,12 +390,12 @@ export const SecurityCenterPage: React.FC = () => {
   };
 
   // Filtered Events
-  const filteredEvents = events.filter((ev) => {
+  const filteredEvents = (events || []).filter((ev) => {
     if (eventCategoryFilter !== 'ALL' && ev.category !== eventCategoryFilter) return false;
     if (eventSeverityFilter !== 'ALL' && ev.severity !== eventSeverityFilter) return false;
     if (eventSearch.trim()) {
       const q = eventSearch.toLowerCase();
-      const matchTitle = ev.title.toLowerCase().includes(q);
+      const matchTitle = ev.title?.toLowerCase().includes(q);
       const matchIp = ev.source_ip?.toLowerCase().includes(q);
       const matchUri = ev.target_uri?.toLowerCase().includes(q);
       if (!matchTitle && !matchIp && !matchUri) return false;
@@ -404,7 +404,7 @@ export const SecurityCenterPage: React.FC = () => {
   });
 
   // Filtered Incidents
-  const filteredIncidents = incidents.filter((inc) => {
+  const filteredIncidents = (incidents || []).filter((inc) => {
     if (incidentStatusFilter !== 'ALL' && inc.status !== incidentStatusFilter) return false;
     if (incidentSeverityFilter !== 'ALL' && inc.severity !== incidentSeverityFilter) return false;
     return true;
@@ -430,9 +430,8 @@ export const SecurityCenterPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-900/80 border border-gray-800 text-xs">
             <Radio
-              className={`w-3.5 h-3.5 ${
-                sseConnected && !isStreamPaused ? 'text-emerald-400 animate-pulse' : 'text-gray-500'
-              }`}
+              className={`w-3.5 h-3.5 ${sseConnected && !isStreamPaused ? 'text-emerald-400 animate-pulse' : 'text-gray-500'
+                }`}
             />
             <span className={sseConnected && !isStreamPaused ? 'text-emerald-400 font-medium' : 'text-gray-400'}>
               {isStreamPaused ? 'Stream Paused' : sseConnected ? 'Live Stream Active' : 'Connecting Stream...'}
@@ -476,21 +475,19 @@ export const SecurityCenterPage: React.FC = () => {
         <nav className="flex space-x-6">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === 'overview'
+            className={`pb-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'overview'
                 ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
-            }`}
+              }`}
           >
             SMB Posture Overview
           </button>
           <button
             onClick={() => setActiveTab('events')}
-            className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'events'
+            className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'events'
                 ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
-            }`}
+              }`}
           >
             Live Security Events
             {events.length > 0 && (
@@ -501,11 +498,10 @@ export const SecurityCenterPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('incidents')}
-            className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'incidents'
+            className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'incidents'
                 ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
-            }`}
+              }`}
           >
             Correlated Incidents
             {overview && overview.open_incidents_total > 0 && (
@@ -516,16 +512,15 @@ export const SecurityCenterPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('alerts_retention')}
-            className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'alerts_retention'
+            className={`pb-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'alerts_retention'
                 ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
-            }`}
+              }`}
           >
             In-App Alerts & Retention
-            {alerts.filter((a) => !a.is_acknowledged).length > 0 && (
+            {(alerts || []).filter((a) => !a.is_acknowledged).length > 0 && (
               <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-300">
-                {alerts.filter((a) => !a.is_acknowledged).length}
+                {(alerts || []).filter((a) => !a.is_acknowledged).length}
               </span>
             )}
           </button>
@@ -556,15 +551,14 @@ export const SecurityCenterPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">Rating Grade:</span>
                 <span
-                  className={`px-2 py-0.5 text-xs font-bold rounded ${
-                    overview?.security_grade === 'A+' || overview?.security_grade === 'A'
+                  className={`px-2 py-0.5 text-xs font-bold rounded ${overview?.security_grade === 'A+' || overview?.security_grade === 'A'
                       ? 'bg-emerald-500/20 text-emerald-400'
                       : overview?.security_grade === 'B'
-                      ? 'bg-blue-500/20 text-blue-400'
-                      : overview?.security_grade === 'C'
-                      ? 'bg-amber-500/20 text-amber-400'
-                      : 'bg-red-500/20 text-red-400'
-                  }`}
+                        ? 'bg-blue-500/20 text-blue-400'
+                        : overview?.security_grade === 'C'
+                          ? 'bg-amber-500/20 text-amber-400'
+                          : 'bg-red-500/20 text-red-400'
+                    }`}
                 >
                   Grade {overview ? overview.security_grade : '--'}
                 </span>
@@ -680,7 +674,7 @@ export const SecurityCenterPage: React.FC = () => {
                 Zero Trust Asset Posture Breakdown
               </h3>
               {overview?.trust_distribution &&
-              Object.values(overview.trust_distribution).reduce((a, b) => a + b, 0) > 0 ? (
+                Object.values(overview.trust_distribution).reduce((a, b) => a + b, 0) > 0 ? (
                 <div className="space-y-3">
                   {Object.entries(overview.trust_distribution).map(([status, count]) => (
                     <div key={status} className="flex items-center justify-between text-xs">
@@ -688,15 +682,14 @@ export const SecurityCenterPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-gray-400">{count} assets</span>
                         <span
-                          className={`w-2.5 h-2.5 rounded-full ${
-                            status === 'TRUSTED'
+                          className={`w-2.5 h-2.5 rounded-full ${status === 'TRUSTED'
                               ? 'bg-emerald-400'
                               : status === 'RESTRICTED'
-                              ? 'bg-amber-400'
-                              : status === 'UNTRUSTED'
-                              ? 'bg-red-400'
-                              : 'bg-gray-500'
-                          }`}
+                                ? 'bg-amber-400'
+                                : status === 'UNTRUSTED'
+                                  ? 'bg-red-400'
+                                  : 'bg-gray-500'
+                            }`}
                         />
                       </div>
                     </div>
@@ -850,9 +843,8 @@ export const SecurityCenterPage: React.FC = () => {
                         {ev.target_uri || '--'}
                         {ev.status_code && (
                           <span
-                            className={`ml-1 px-1 py-0.2 rounded text-[10px] ${
-                              ev.status_code >= 400 ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'
-                            }`}
+                            className={`ml-1 px-1 py-0.2 rounded text-[10px] ${ev.status_code >= 400 ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'
+                              }`}
                           >
                             {ev.status_code}
                           </span>
@@ -947,9 +939,8 @@ export const SecurityCenterPage: React.FC = () => {
                       <tr
                         key={inc.id}
                         onClick={() => handleSelectIncident(inc.id)}
-                        className={`cursor-pointer transition-colors ${
-                          selectedIncidentId === inc.id ? 'bg-cyan-950/30 border-l-2 border-cyan-400' : 'hover:bg-gray-800/40'
-                        }`}
+                        className={`cursor-pointer transition-colors ${selectedIncidentId === inc.id ? 'bg-cyan-950/30 border-l-2 border-cyan-400' : 'hover:bg-gray-800/40'
+                          }`}
                       >
                         <td className="py-3 px-4 font-mono font-bold text-cyan-400 whitespace-nowrap">
                           {inc.incident_number}
@@ -1098,10 +1089,10 @@ export const SecurityCenterPage: React.FC = () => {
                   <div>
                     <h4 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                      Investigation Timeline ({incidentDetail.timeline_entries.length})
+                      Investigation Timeline ({(incidentDetail.timeline_entries || []).length})
                     </h4>
                     <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
-                      {incidentDetail.timeline_entries.map((entry) => (
+                      {(incidentDetail.timeline_entries || []).map((entry) => (
                         <div key={entry.id} className="p-2 rounded bg-gray-800/50 border border-gray-800 text-[11px]">
                           <div className="flex items-center justify-between text-gray-400 text-[10px]">
                             <span>{entry.entry_type}</span>
@@ -1154,20 +1145,19 @@ export const SecurityCenterPage: React.FC = () => {
                 Operational In-App Alerts
               </span>
               <span className="text-xs font-normal text-gray-400">
-                {alerts.filter((a) => !a.is_acknowledged).length} unacknowledged
+                {(alerts || []).filter((a) => !a.is_acknowledged).length} unacknowledged
               </span>
             </h3>
 
             <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-              {alerts.length > 0 ? (
-                alerts.map((alert) => (
+              {(alerts || []).length > 0 ? (
+                (alerts || []).map((alert) => (
                   <div
                     key={alert.id}
-                    className={`p-3 rounded-lg border text-xs transition-colors flex items-start justify-between gap-3 ${
-                      alert.is_acknowledged
+                    className={`p-3 rounded-lg border text-xs transition-colors flex items-start justify-between gap-3 ${alert.is_acknowledged
                         ? 'bg-gray-800/30 border-gray-800/60 opacity-60'
                         : 'bg-gray-800/80 border-gray-700'
-                    }`}
+                      }`}
                   >
                     <div>
                       <div className="flex items-center gap-2">

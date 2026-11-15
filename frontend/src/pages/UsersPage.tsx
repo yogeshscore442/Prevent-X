@@ -23,9 +23,11 @@ export const UsersPage: React.FC = () => {
     setLoading(true);
     try {
       const resp = await api.get('/users');
-      setUsers(resp.data.items || []);
+      const items = Array.isArray(resp.data) ? resp.data : (resp.data?.items || []);
+      setUsers(items);
     } catch (err: any) {
       setError(err.response?.data?.detail?.message || 'Failed to load organization users');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -117,7 +119,7 @@ export const UsersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-800 font-mono">
-                {users.map((u) => (
+                {(users || []).map((u) => (
                   <tr key={u.id} className="hover:bg-navy-850/50 transition-colors">
                     <td className="py-3 px-4 font-sans">
                       <div className="font-semibold text-slate-200">{u.full_name}</div>

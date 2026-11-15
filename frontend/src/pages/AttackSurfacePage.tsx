@@ -92,13 +92,16 @@ export const AttackSurfacePage: React.FC = () => {
       ]);
 
       setOverview(ovData);
-      setJobs(jobsData);
-      setDomains(domainsData);
-      setFindings(findingsData);
-      setActiveScans(activeScansData);
-      setDiscoveredServices(servicesData);
+      const safeJobs = Array.isArray(jobsData) ? jobsData : [];
+      const safeActiveScans = Array.isArray(activeScansData) ? activeScansData : [];
+      setJobs(safeJobs);
+      setDomains(Array.isArray(domainsData) ? domainsData : []);
+      setFindings(Array.isArray(findingsData) ? findingsData : []);
+      setActiveScans(safeActiveScans);
+      setDiscoveredServices(Array.isArray(servicesData) ? servicesData : []);
 
-      const assetList = (assetsRes.data?.items || assetsRes.data || []) as AssetOption[];
+      const rawItems = assetsRes.data?.items ?? assetsRes.data;
+      const assetList = (Array.isArray(rawItems) ? rawItems : []) as AssetOption[];
       setAssets(assetList.filter((a) => a.is_in_scope));
       if (assetList.length > 0) {
         if (!selectedAssetId) setSelectedAssetId(assetList[0].id);
@@ -106,18 +109,24 @@ export const AttackSurfacePage: React.FC = () => {
       }
 
       // Check if any passive job is currently in progress
-      const running = jobsData.find((j) => j.status === 'RUNNING' || j.status === 'QUEUED');
+      const running = safeJobs.find((j) => j.status === 'RUNNING' || j.status === 'QUEUED');
       if (running) {
         setActiveJob(running);
       }
 
       // Check if any active scan job is currently in progress
-      const runningScan = activeScansData.find((s) => s.status === 'RUNNING' || s.status === 'PENDING');
+      const runningScan = safeActiveScans.find((s) => s.status === 'RUNNING' || s.status === 'PENDING');
       if (runningScan) {
         setRunningActiveScan(runningScan);
       }
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Failed to initialize attack surface engine.');
+      setJobs([]);
+      setDomains([]);
+      setFindings([]);
+      setActiveScans([]);
+      setDiscoveredServices([]);
+      setAssets([]);
     } finally {
       setIsLoading(false);
     }
@@ -280,21 +289,21 @@ export const AttackSurfacePage: React.FC = () => {
     }
   };
 
-  const filteredDomains = domains.filter((d) =>
+  const filteredDomains = (domains || []).filter((d) =>
     domainSearch ? d.domain_name.toLowerCase().includes(domainSearch.toLowerCase()) : true
   );
 
-  const filteredServices = discoveredServices.filter((s) => {
+  const filteredServices = (discoveredServices || []).filter((s) => {
     const matchSearch = serviceSearch
       ? s.service_name.toLowerCase().includes(serviceSearch.toLowerCase()) ||
-        s.port.toString().includes(serviceSearch) ||
-        (s.banner && s.banner.toLowerCase().includes(serviceSearch.toLowerCase()))
+      s.port.toString().includes(serviceSearch) ||
+      (s.banner && s.banner.toLowerCase().includes(serviceSearch.toLowerCase()))
       : true;
     const matchState = serviceStateFilter === 'ALL' || s.state === serviceStateFilter;
     return matchSearch && matchState;
   });
 
-  const filteredFindings = findings.filter((f) => {
+  const filteredFindings = (findings || []).filter((f) => {
     const matchSev = findingSeverityFilter === 'ALL' || f.severity === findingSeverityFilter;
     const matchCat = findingCategoryFilter === 'ALL' || f.finding_category === findingCategoryFilter;
     const matchNature = findingNatureFilter === 'ALL' || f.evidence_nature === findingNatureFilter;
@@ -350,18 +359,16 @@ export const AttackSurfacePage: React.FC = () => {
         <div className="flex items-center gap-1.5 bg-navy-900 border border-navy-800 p-1 rounded-lg">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-              activeTab === 'overview' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${activeTab === 'overview' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
           >
             <Activity className="w-3.5 h-3.5" />
             Overview
           </button>
           <button
             onClick={() => setActiveTab('discovery')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-              activeTab === 'discovery' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${activeTab === 'discovery' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
           >
             <Play className="w-3.5 h-3.5" />
             Discovery Center
@@ -371,9 +378,8 @@ export const AttackSurfacePage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('active-discovery')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-              activeTab === 'active-discovery' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${activeTab === 'active-discovery' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
           >
             <Radio className="w-3.5 h-3.5" />
             Active Service Discovery
@@ -383,18 +389,16 @@ export const AttackSurfacePage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('domains')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-              activeTab === 'domains' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${activeTab === 'domains' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
           >
             <Layers className="w-3.5 h-3.5" />
             Discovered Assets ({domains.length})
           </button>
           <button
             onClick={() => setActiveTab('findings')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-              activeTab === 'findings' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${activeTab === 'findings' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
             Findings ({findings.length})
@@ -472,10 +476,10 @@ export const AttackSurfacePage: React.FC = () => {
                   {overview?.average_exposure_score && overview.average_exposure_score >= 75
                     ? 'CRITICAL'
                     : overview?.average_exposure_score && overview.average_exposure_score >= 50
-                    ? 'HIGH'
-                    : overview?.average_exposure_score && overview.average_exposure_score >= 20
-                    ? 'MEDIUM'
-                    : 'LOW'}
+                      ? 'HIGH'
+                      : overview?.average_exposure_score && overview.average_exposure_score >= 20
+                        ? 'MEDIUM'
+                        : 'LOW'}
                 </span>
               </div>
               <div className="mt-2 text-2xl font-bold font-mono">
@@ -606,15 +610,14 @@ export const AttackSurfacePage: React.FC = () => {
                         </div>
                       </div>
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
-                          j.status === 'COMPLETED'
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono border ${j.status === 'COMPLETED'
                             ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
                             : j.status === 'RUNNING'
-                            ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
-                            : j.status === 'FAILED'
-                            ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
-                            : 'bg-slate-800 border-slate-700 text-slate-300'
-                        }`}
+                              ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
+                              : j.status === 'FAILED'
+                                ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
+                                : 'bg-slate-800 border-slate-700 text-slate-300'
+                          }`}
                       >
                         {j.status}
                       </span>
@@ -802,17 +805,16 @@ export const AttackSurfacePage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
-                            j.status === 'COMPLETED'
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono border ${j.status === 'COMPLETED'
                               ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
                               : j.status === 'PARTIALLY_COMPLETED'
-                              ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
-                              : j.status === 'RUNNING'
-                              ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
-                              : j.status === 'FAILED'
-                              ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
-                              : 'bg-slate-800 border-slate-700 text-slate-300'
-                          }`}
+                                ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
+                                : j.status === 'RUNNING'
+                                  ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
+                                  : j.status === 'FAILED'
+                                    ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
+                                    : 'bg-slate-800 border-slate-700 text-slate-300'
+                            }`}
                         >
                           {j.status}
                         </span>
@@ -898,11 +900,10 @@ export const AttackSurfacePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setScanProfile('BASIC')}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          scanProfile === 'BASIC'
+                        className={`p-3 rounded-lg border text-left transition-all ${scanProfile === 'BASIC'
                             ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-sm'
                             : 'bg-navy-950 border-navy-800 text-slate-400 hover:border-navy-700'
-                        }`}
+                          }`}
                       >
                         <div className="text-xs font-bold">BASIC</div>
                         <div className="text-[10px] text-slate-400 mt-0.5">Ports 80, 443</div>
@@ -911,11 +912,10 @@ export const AttackSurfacePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setScanProfile('STANDARD')}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          scanProfile === 'STANDARD'
+                        className={`p-3 rounded-lg border text-left transition-all ${scanProfile === 'STANDARD'
                             ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-sm'
                             : 'bg-navy-950 border-navy-800 text-slate-400 hover:border-navy-700'
-                        }`}
+                          }`}
                       >
                         <div className="text-xs font-bold">STANDARD</div>
                         <div className="text-[10px] text-slate-400 mt-0.5">17 Approved Ports</div>
@@ -924,11 +924,10 @@ export const AttackSurfacePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setScanProfile('CUSTOM')}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          scanProfile === 'CUSTOM'
+                        className={`p-3 rounded-lg border text-left transition-all ${scanProfile === 'CUSTOM'
                             ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-sm'
                             : 'bg-navy-950 border-navy-800 text-slate-400 hover:border-navy-700'
-                        }`}
+                          }`}
                       >
                         <div className="text-xs font-bold">CUSTOM</div>
                         <div className="text-[10px] text-slate-400 mt-0.5">Max 50 Ports</div>
@@ -1131,13 +1130,12 @@ export const AttackSurfacePage: React.FC = () => {
                           </td>
                           <td className="px-4 py-3">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
-                                svc.state === 'OPEN'
+                              className={`px-2 py-0.5 rounded text-[10px] font-mono border ${svc.state === 'OPEN'
                                   ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
                                   : svc.state === 'FILTERED'
-                                  ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
-                                  : 'bg-slate-800 border-slate-700 text-slate-400'
-                              }`}
+                                    ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
+                                    : 'bg-slate-800 border-slate-700 text-slate-400'
+                                }`}
                             >
                               {svc.state}
                             </span>
@@ -1234,17 +1232,16 @@ export const AttackSurfacePage: React.FC = () => {
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
-                              s.status === 'COMPLETED'
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono border ${s.status === 'COMPLETED'
                                 ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
                                 : s.status === 'RUNNING'
-                                ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
-                                : s.status === 'CANCELLED'
-                                ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
-                                : s.status === 'FAILED'
-                                ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
-                                : 'bg-slate-800 border-slate-700 text-slate-400'
-                            }`}
+                                  ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 animate-pulse'
+                                  : s.status === 'CANCELLED'
+                                    ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
+                                    : s.status === 'FAILED'
+                                      ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
+                                      : 'bg-slate-800 border-slate-700 text-slate-400'
+                              }`}
                           >
                             {s.status}
                           </span>
@@ -1310,11 +1307,10 @@ export const AttackSurfacePage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
-                            d.is_subdomain
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono border ${d.is_subdomain
                               ? 'bg-blue-950/60 border-blue-500/40 text-blue-300'
                               : 'bg-purple-950/60 border-purple-500/40 text-purple-300'
-                          }`}
+                            }`}
                         >
                           {d.is_subdomain ? 'SUBDOMAIN' : 'APEX'}
                         </span>
@@ -1431,15 +1427,14 @@ export const AttackSurfacePage: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
-                          f.evidence_nature === 'VERIFIED_ISSUE'
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${f.evidence_nature === 'VERIFIED_ISSUE'
                             ? 'bg-rose-950/60 border-rose-600/50 text-rose-300'
                             : f.evidence_nature === 'POTENTIAL_WEAKNESS'
-                            ? 'bg-amber-950/60 border-amber-600/50 text-amber-300'
-                            : f.evidence_nature === 'OBSERVED_FACT'
-                            ? 'bg-blue-950/60 border-blue-600/50 text-blue-300'
-                            : 'bg-slate-800 border-slate-700 text-slate-300'
-                        }`}>
+                              ? 'bg-amber-950/60 border-amber-600/50 text-amber-300'
+                              : f.evidence_nature === 'OBSERVED_FACT'
+                                ? 'bg-blue-950/60 border-blue-600/50 text-blue-300'
+                                : 'bg-slate-800 border-slate-700 text-slate-300'
+                          }`}>
                           {f.evidence_nature || 'FACT'}
                         </span>
                       </td>
@@ -1450,11 +1445,10 @@ export const AttackSurfacePage: React.FC = () => {
                       <td className="px-4 py-3 font-mono text-[11px] text-slate-400">{f.finding_category}</td>
                       <td className="px-4 py-3 font-mono text-[11px] text-slate-300">
                         {f.verification_status ? (
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] border ${
-                            f.verification_status === 'VERIFIED_UNCLAIMED_RESOURCE'
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] border ${f.verification_status === 'VERIFIED_UNCLAIMED_RESOURCE'
                               ? 'bg-rose-950/80 border-rose-500 text-rose-300 font-bold'
                               : 'bg-navy-950 border-navy-700 text-slate-400'
-                          }`}>
+                            }`}>
                             {f.verification_status}
                           </span>
                         ) : '—'}
@@ -1686,11 +1680,10 @@ export const AttackSurfacePage: React.FC = () => {
                   {inspectService.port} / {inspectService.protocol}
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
-                    inspectService.state === 'OPEN'
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono border ${inspectService.state === 'OPEN'
                       ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
                       : 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
-                  }`}
+                    }`}
                 >
                   {inspectService.state}
                 </span>
@@ -1760,11 +1753,10 @@ export const AttackSurfacePage: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Days Remaining:</span>
                     <span
-                      className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] border ${
-                        tls.is_expired || (tls.days_remaining !== undefined && tls.days_remaining < 0)
+                      className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] border ${tls.is_expired || (tls.days_remaining !== undefined && tls.days_remaining < 0)
                           ? 'bg-rose-950/80 border-rose-600/50 text-rose-300'
                           : 'bg-emerald-950/80 border-emerald-600/50 text-emerald-300'
-                      }`}
+                        }`}
                     >
                       {tls.days_remaining !== undefined ? `${tls.days_remaining} days` : 'N/A'}
                     </span>

@@ -23,15 +23,17 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 export const AppLayout: React.FC = () => {
   const { user, activeOrgId, switchOrganization, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
 
-  const activeMembership = user?.memberships.find(
+  const memberships = user?.memberships || [];
+  const activeMembership = memberships.find(
     (m) => m.organization_id === activeOrgId
-  ) || user?.memberships[0];
+  ) || memberships[0];
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -89,18 +91,17 @@ export const AppLayout: React.FC = () => {
               <ChevronDown className="w-4 h-4 text-slate-400 ml-2 flex-shrink-0" />
             </button>
 
-            {orgDropdownOpen && user && user.memberships.length > 0 && (
+            {orgDropdownOpen && user && memberships.length > 0 && (
               <div className="absolute left-0 right-0 mt-1.5 bg-navy-850 border border-navy-700 rounded-lg shadow-xl z-50 py-1 max-h-48 overflow-y-auto">
-                {user.memberships.map((m) => (
+                {memberships.map((m) => (
                   <button
                     key={m.organization_id}
                     onClick={() => {
                       switchOrganization(m.organization_id);
                       setOrgDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs flex flex-col hover:bg-navy-750 transition-colors ${
-                      m.organization_id === activeOrgId ? 'bg-cyan-950/40 text-cyan-300 font-medium' : 'text-slate-300'
-                    }`}
+                    className={`w-full text-left px-3 py-2 text-xs flex flex-col hover:bg-navy-750 transition-colors ${m.organization_id === activeOrgId ? 'bg-cyan-950/40 text-cyan-300 font-medium' : 'text-slate-300'
+                      }`}
                   >
                     <span>{m.organization_name}</span>
                     <span className="text-[10px] text-slate-400 font-mono">{m.role_name}</span>
@@ -124,10 +125,9 @@ export const AppLayout: React.FC = () => {
                 to={item.path}
                 end={item.path === '/'}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-navy-800/60'
+                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-800/60'
                   }`
                 }
               >
@@ -216,7 +216,9 @@ export const AppLayout: React.FC = () => {
 
         {/* Scrollable Page Body */}
         <main className="flex-1 overflow-y-auto p-6 bg-navy-950">
-          <Outlet />
+          <ErrorBoundary fallbackTitle="Module View Render Error">
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

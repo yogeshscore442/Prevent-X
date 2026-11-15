@@ -12,9 +12,11 @@ export const AuditLogsPage: React.FC = () => {
     setLoading(true);
     try {
       const resp = await api.get('/audit-logs?limit=100');
-      setLogs(resp.data.items || []);
+      const items = Array.isArray(resp.data) ? resp.data : (resp.data?.items || []);
+      setLogs(items);
     } catch (err: any) {
       setError(err.response?.data?.detail?.message || 'Failed to retrieve audit trail');
+      setLogs([]);
     } finally {
       setLoading(false);
     }
@@ -61,7 +63,7 @@ export const AuditLogsPage: React.FC = () => {
             <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
             <span>Streaming audit records...</span>
           </div>
-        ) : logs.length === 0 ? (
+        ) : (logs || []).length === 0 ? (
           <div className="py-16 text-center text-slate-400 text-xs">
             No audit records found in current organization scope.
           </div>
@@ -79,7 +81,7 @@ export const AuditLogsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-800 text-[11px]">
-                {logs.map((log) => (
+                {(logs || []).map((log) => (
                   <tr key={log.id} className="hover:bg-navy-850/50 transition-colors">
                     <td className="py-3 px-4 text-slate-400 whitespace-nowrap">
                       {new Date(log.created_at).toISOString().replace('T', ' ').slice(0, 19)}

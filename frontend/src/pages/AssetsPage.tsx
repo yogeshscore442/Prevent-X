@@ -33,9 +33,11 @@ export const AssetsPage: React.FC = () => {
     setLoading(true);
     try {
       const resp = await api.get('/assets');
-      setAssets(resp.data.items || []);
+      const items = Array.isArray(resp.data) ? resp.data : (resp.data?.items || []);
+      setAssets(items);
     } catch (err: any) {
       setError(err.response?.data?.detail?.message || 'Failed to load assets');
+      setAssets([]);
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ export const AssetsPage: React.FC = () => {
     }
     try {
       await api.delete(`/assets/${id}`);
-      setAssets(assets.filter((a) => a.id !== id));
+      setAssets((prev) => (prev || []).filter((a) => a.id !== id));
     } catch (err: any) {
       setError(err.response?.data?.detail?.message || 'Failed to delete asset');
     }
@@ -159,7 +161,7 @@ export const AssetsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-800 font-mono">
-                {assets.map((asset) => (
+                {(assets || []).map((asset) => (
                   <tr key={asset.id} className="hover:bg-navy-850/50 transition-colors">
                     <td className="py-3 px-4 font-sans font-semibold text-slate-200">
                       {asset.name}
@@ -175,13 +177,12 @@ export const AssetsPage: React.FC = () => {
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                          asset.criticality === 'CRITICAL'
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold ${asset.criticality === 'CRITICAL'
                             ? 'bg-rose-950 text-rose-300 border border-rose-800/60'
                             : asset.criticality === 'HIGH'
-                            ? 'bg-amber-950 text-amber-300 border border-amber-800/60'
-                            : 'bg-slate-800 text-slate-300'
-                        }`}
+                              ? 'bg-amber-950 text-amber-300 border border-amber-800/60'
+                              : 'bg-slate-800 text-slate-300'
+                          }`}
                       >
                         {asset.criticality}
                       </span>

@@ -67,10 +67,10 @@ export const RolesPage: React.FC = () => {
                 <p className="text-xs text-slate-300 mb-4">{role.description}</p>
 
                 <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Granted Permissions ({role.permissions.length})
+                  Granted Permissions ({(role.permissions || []).length})
                 </div>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto font-mono text-[11px]">
-                  {role.permissions.map((p) => (
+                  {(role.permissions || []).map((p) => (
                     <div key={p.id} className="flex items-center gap-2 text-slate-300 bg-navy-850/60 p-1.5 rounded">
                       <Check className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
                       <span className="font-semibold text-cyan-200">{p.code}</span>

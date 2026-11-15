@@ -80,23 +80,29 @@ export const AttackPathsPage: React.FC = () => {
     setError(null);
     try {
       const [overviewData, pathsData, recsData, trustData, assetsRes] = await Promise.all([
-        attackPathApi.getOverview(),
-        attackPathApi.listPaths({ limit: 50 }),
-        attackPathApi.listRecommendations({ limit: 50 }),
-        attackPathApi.listTrustRelationships(),
-        api.get<ManagedAsset[]>('/assets').catch(() => ({ data: [] })),
+        attackPathApi.getOverview().catch(() => null),
+        attackPathApi.listPaths({ limit: 50 }).catch(() => ({ total: 0, items: [], limit: 50, offset: 0 })),
+        attackPathApi.listRecommendations({ limit: 50 }).catch(() => ({ total: 0, items: [], limit: 50, offset: 0 })),
+        attackPathApi.listTrustRelationships().catch(() => []),
+        api.get('/assets').catch(() => ({ data: { items: [], total: 0 } })),
       ]);
 
       setOverview(overviewData);
-      setPaths(pathsData.items);
-      setTotalPaths(pathsData.total);
-      if (pathsData.items.length > 0 && !selectedPath) {
-        setSelectedPath(pathsData.items[0]);
+      const fetchedPaths = Array.isArray(pathsData?.items) ? pathsData.items : [];
+      setPaths(fetchedPaths);
+      setTotalPaths(pathsData?.total ?? 0);
+      if (fetchedPaths.length > 0 && !selectedPath) {
+        setSelectedPath(fetchedPaths[0]);
       }
-      setRecommendations(recsData.items);
-      setTotalRecs(recsData.total);
-      setTrustLinks(trustData);
-      setAssets(assetsRes.data || []);
+      setRecommendations(Array.isArray(recsData?.items) ? recsData.items : []);
+      setTotalRecs(recsData?.total ?? 0);
+      setTrustLinks(Array.isArray(trustData) ? trustData : []);
+      const assetList = Array.isArray(assetsRes?.data?.items)
+        ? assetsRes.data.items
+        : Array.isArray(assetsRes?.data)
+          ? assetsRes.data
+          : [];
+      setAssets(assetList);
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Failed to load attack path intelligence data.');
     } finally {
@@ -110,11 +116,12 @@ export const AttackPathsPage: React.FC = () => {
       if (severityFilter !== 'ALL') params.severity = severityFilter;
       if (confidenceFilter !== 'ALL') params.confidence = confidenceFilter;
       if (statusFilter !== 'ALL') params.status = statusFilter;
-      const res = await attackPathApi.listPaths(params);
-      setPaths(res.items);
-      setTotalPaths(res.total);
-      if (res.items.length > 0 && (!selectedPath || !res.items.some(p => p.id === selectedPath.id))) {
-        setSelectedPath(res.items[0]);
+      const res = await attackPathApi.listPaths(params).catch(() => ({ total: 0, items: [], limit: 50, offset: 0 }));
+      const items = Array.isArray(res?.items) ? res.items : [];
+      setPaths(items);
+      setTotalPaths(res?.total ?? 0);
+      if (items.length > 0 && (!selectedPath || !items.some(p => p.id === selectedPath.id))) {
+        setSelectedPath(items[0]);
       }
     } catch (err: any) {
       console.error('Failed to reload paths', err);
@@ -125,9 +132,9 @@ export const AttackPathsPage: React.FC = () => {
     try {
       const params: any = { limit: 50 };
       if (recCategoryFilter !== 'ALL') params.category = recCategoryFilter;
-      const res = await attackPathApi.listRecommendations(params);
-      setRecommendations(res.items);
-      setTotalRecs(res.total);
+      const res = await attackPathApi.listRecommendations(params).catch(() => ({ total: 0, items: [], limit: 50, offset: 0 }));
+      setRecommendations(Array.isArray(res?.items) ? res.items : []);
+      setTotalRecs(res?.total ?? 0);
     } catch (err: any) {
       console.error('Failed to reload recommendations', err);
     }
@@ -356,11 +363,10 @@ export const AttackPathsPage: React.FC = () => {
       <div className="border-b border-gray-800 flex gap-4">
         <button
           onClick={() => setActiveTab('paths')}
-          className={`pb-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${
-            activeTab === 'paths'
+          className={`pb-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'paths'
               ? 'border-rose-500 text-rose-400'
               : 'border-transparent text-gray-400 hover:text-gray-200'
-          }`}
+            }`}
         >
           <Workflow className="w-4 h-4" />
           Attack Paths & Visual Graph ({totalPaths})
@@ -368,11 +374,10 @@ export const AttackPathsPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('recommendations')}
-          className={`pb-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${
-            activeTab === 'recommendations'
+          className={`pb-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'recommendations'
               ? 'border-rose-500 text-rose-400'
               : 'border-transparent text-gray-400 hover:text-gray-200'
-          }`}
+            }`}
         >
           <ShieldCheck className="w-4 h-4" />
           Prevention Recommendations ({totalRecs})
@@ -380,11 +385,10 @@ export const AttackPathsPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('trust')}
-          className={`pb-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${
-            activeTab === 'trust'
+          className={`pb-3 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${activeTab === 'trust'
               ? 'border-rose-500 text-rose-400'
               : 'border-transparent text-gray-400 hover:text-gray-200'
-          }`}
+            }`}
         >
           <LinkIcon className="w-4 h-4" />
           Asset Trust Relationships ({trustLinks.length})
@@ -460,11 +464,10 @@ export const AttackPathsPage: React.FC = () => {
                     <div
                       key={path.id}
                       onClick={() => setSelectedPath(path)}
-                      className={`p-4 rounded-xl border transition-all cursor-pointer ${
-                        isSelected
+                      className={`p-4 rounded-xl border transition-all cursor-pointer ${isSelected
                           ? 'bg-rose-950/20 border-rose-500/60 shadow-lg shadow-rose-950/30'
                           : 'bg-gray-900 border-gray-800 hover:border-gray-700'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
@@ -582,7 +585,7 @@ export const AttackPathsPage: React.FC = () => {
                       Evidence-Backed Attack Graph Visualizer
                     </span>
                     <span className="text-gray-500">
-                      {selectedPath.graph_data?.nodes.length || 2} Nodes | {selectedPath.graph_data?.edges.length || 1} Hops
+                      {(selectedPath.graph_data?.nodes || []).length || 2} Nodes | {(selectedPath.graph_data?.edges || []).length || 1} Hops
                     </span>
                   </div>
 
@@ -599,8 +602,8 @@ export const AttackPathsPage: React.FC = () => {
                       </div>
 
                       {/* Render Nodes from graph_data */}
-                      {selectedPath.graph_data?.nodes.map((node: GraphNode, idx: number) => {
-                        const edge = selectedPath.graph_data?.edges[idx];
+                      {(selectedPath.graph_data?.nodes || []).map((node: GraphNode, idx: number) => {
+                        const edge = (selectedPath.graph_data?.edges || [])[idx];
                         return (
                           <React.Fragment key={node.id}>
                             {/* Connecting Arrow with Edge label */}
@@ -620,13 +623,12 @@ export const AttackPathsPage: React.FC = () => {
                             {/* Target Node */}
                             <div className="flex flex-col items-center">
                               <div
-                                className={`w-14 h-14 rounded-xl border flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-105 ${
-                                  node.is_crown_jewel
+                                className={`w-14 h-14 rounded-xl border flex flex-col items-center justify-center shadow-lg transition-transform hover:scale-105 ${node.is_crown_jewel
                                     ? 'bg-rose-950/40 border-rose-500 text-rose-300 shadow-rose-950/50'
                                     : node.is_entry_point
-                                    ? 'bg-amber-950/40 border-amber-500 text-amber-300 shadow-amber-950/50'
-                                    : 'bg-blue-950/40 border-blue-500 text-blue-300 shadow-blue-950/50'
-                                }`}
+                                      ? 'bg-amber-950/40 border-amber-500 text-amber-300 shadow-amber-950/50'
+                                      : 'bg-blue-950/40 border-blue-500 text-blue-300 shadow-blue-950/50'
+                                  }`}
                               >
                                 {node.is_crown_jewel ? (
                                   <ShieldAlert className="w-6 h-6" />
@@ -640,13 +642,12 @@ export const AttackPathsPage: React.FC = () => {
                                 {node.name}
                               </span>
                               <span
-                                className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
-                                  node.is_crown_jewel
+                                className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${node.is_crown_jewel
                                     ? 'text-rose-400 bg-rose-950/80'
                                     : node.is_entry_point
-                                    ? 'text-amber-400 bg-amber-950/80'
-                                    : 'text-blue-400 bg-blue-950/80'
-                                }`}
+                                      ? 'text-amber-400 bg-amber-950/80'
+                                      : 'text-blue-400 bg-blue-950/80'
+                                  }`}
                               >
                                 {node.is_crown_jewel ? 'Crown Jewel' : node.is_entry_point ? 'Entry Point' : 'Pivot'}
                               </span>
@@ -677,7 +678,7 @@ export const AttackPathsPage: React.FC = () => {
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedPath.mitre_techniques.map((tech: MitreTechnique, idx: number) => (
+                    {(selectedPath.mitre_techniques || []).map((tech: MitreTechnique, idx: number) => (
                       <div
                         key={idx}
                         className="bg-gray-950 border border-gray-800 p-3 rounded-lg text-xs space-y-1.5"
@@ -698,14 +699,14 @@ export const AttackPathsPage: React.FC = () => {
                 </div>
 
                 {/* Exploit Prerequisites */}
-                {selectedPath.prerequisites.length > 0 && (
+                {(selectedPath.prerequisites || []).length > 0 && (
                   <div className="space-y-2">
                     <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
                       <Shield className="w-4 h-4 text-amber-400" />
                       Required Exploit Prerequisites
                     </h4>
                     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      {selectedPath.prerequisites.map((prereq: string, idx: number) => (
+                      {(selectedPath.prerequisites || []).map((prereq: string, idx: number) => (
                         <li
                           key={idx}
                           className="bg-gray-950 border border-gray-800/80 p-2 rounded text-gray-300 flex items-start gap-2"
@@ -719,13 +720,13 @@ export const AttackPathsPage: React.FC = () => {
                 )}
 
                 {/* Evidence References */}
-                {selectedPath.evidence_references.length > 0 && (
+                {(selectedPath.evidence_references || []).length > 0 && (
                   <div className="space-y-2">
                     <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                       Empirical Evidence Citations
                     </h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {selectedPath.evidence_references.map((ref: string, idx: number) => (
+                      {(selectedPath.evidence_references || []).map((ref: string, idx: number) => (
                         <span
                           key={idx}
                           className="text-[10px] font-mono bg-gray-950 border border-gray-800 text-gray-300 px-2 py-1 rounded"
@@ -822,46 +823,42 @@ export const AttackPathsPage: React.FC = () => {
                         </td>
                         <td className="py-3.5 px-4">
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                              rec.risk_reduction === 'HIGH'
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${rec.risk_reduction === 'HIGH'
                                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                                 : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                            }`}
+                              }`}
                           >
                             {rec.risk_reduction}
                           </span>
                         </td>
                         <td className="py-3.5 px-4">
                           <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                              rec.implementation_complexity === 'LOW'
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded ${rec.implementation_complexity === 'LOW'
                                 ? 'text-emerald-400 bg-emerald-950/40'
                                 : 'text-amber-400 bg-amber-950/40'
-                            }`}
+                              }`}
                           >
                             {rec.implementation_complexity}
                           </span>
                         </td>
                         <td className="py-3.5 px-4">
                           <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                              rec.smb_operational_impact === 'MINIMAL'
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded ${rec.smb_operational_impact === 'MINIMAL'
                                 ? 'text-emerald-400 bg-emerald-950/40'
                                 : 'text-amber-400 bg-amber-950/40'
-                            }`}
+                              }`}
                           >
                             {rec.smb_operational_impact}
                           </span>
                         </td>
                         <td className="py-3.5 px-4">
                           <span
-                            className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                              rec.status === 'IMPLEMENTED'
+                            className={`text-[10px] font-mono px-2 py-0.5 rounded ${rec.status === 'IMPLEMENTED'
                                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                                 : rec.status === 'ACCEPTED'
-                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                : 'bg-gray-800 text-gray-300 border border-gray-700'
-                            }`}
+                                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                  : 'bg-gray-800 text-gray-300 border border-gray-700'
+                              }`}
                           >
                             {rec.status}
                           </span>
@@ -1050,7 +1047,7 @@ export const AttackPathsPage: React.FC = () => {
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200"
                 >
                   <option value="">Select source asset...</option>
-                  {assets.map(a => (
+                  {(assets || []).map(a => (
                     <option key={a.id} value={a.id}>
                       {a.name} ({a.target})
                     </option>
@@ -1067,7 +1064,7 @@ export const AttackPathsPage: React.FC = () => {
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200"
                 >
                   <option value="">Select target asset...</option>
-                  {assets
+                  {(assets || [])
                     .filter(a => a.id !== newTrustSource)
                     .map(a => (
                       <option key={a.id} value={a.id}>

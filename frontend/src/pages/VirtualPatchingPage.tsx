@@ -103,12 +103,16 @@ export const VirtualPatchingPage: React.FC = () => {
         virtualPatchApi.listEnforcementLogs({ limit: 100 }),
       ]);
       setOverview(ovData);
-      setRecommendations(recData);
-      setRules(ruleData);
-      setDeployments(depData);
-      setLogs(logData);
+      setRecommendations(Array.isArray(recData) ? recData : []);
+      setRules(Array.isArray(ruleData) ? ruleData : []);
+      setDeployments(Array.isArray(depData) ? depData : []);
+      setLogs(Array.isArray(logData) ? logData : []);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Failed to load Virtual Patching telemetry.');
+      setRecommendations([]);
+      setRules([]);
+      setDeployments([]);
+      setLogs([]);
     } finally {
       setIsLoading(false);
     }
@@ -206,9 +210,10 @@ export const VirtualPatchingPage: React.FC = () => {
     setIsVersionsLoading(true);
     try {
       const vers = await virtualPatchApi.listRuleVersions(rule.id);
-      setRuleVersions(vers);
+      setRuleVersions(Array.isArray(vers) ? vers : []);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Failed to load versions.');
+      setRuleVersions([]);
     } finally {
       setIsVersionsLoading(false);
     }
@@ -349,12 +354,12 @@ export const VirtualPatchingPage: React.FC = () => {
     }
   };
 
-  const filteredRules = rules.filter((r) => {
+  const filteredRules = (rules || []).filter((r) => {
     if (attackTypeFilter === 'ALL') return true;
     return r.attack_type === attackTypeFilter;
   });
 
-  const filteredLogs = logs.filter((l) => {
+  const filteredLogs = (logs || []).filter((l) => {
     if (logDecisionFilter === 'ALL') return true;
     return l.decision === logDecisionFilter;
   });
@@ -449,9 +454,8 @@ export const VirtualPatchingPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <span
-                className={`inline-block w-2.5 h-2.5 rounded-full ${
-                  overview.proxy_status === 'ACTIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
-                }`}
+                className={`inline-block w-2.5 h-2.5 rounded-full ${overview.proxy_status === 'ACTIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                  }`}
               />
               <span className="text-lg font-bold text-slate-100">
                 {overview.proxy_status === 'ACTIVE' ? `Port ${overview.proxy_listen_port}` : 'STOPPED'}
@@ -503,11 +507,10 @@ export const VirtualPatchingPage: React.FC = () => {
       <div className="border-b border-slate-800 flex gap-6">
         <button
           onClick={() => setActiveTab('recommendations')}
-          className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${
-            activeTab === 'recommendations'
+          className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${activeTab === 'recommendations'
               ? 'border-indigo-500 text-indigo-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <Zap className="w-4 h-4" />
           AI Patch Proposals ({recommendations.filter((r) => r.status === 'PROPOSED').length})
@@ -515,11 +518,10 @@ export const VirtualPatchingPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('rules')}
-          className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${
-            activeTab === 'rules'
+          className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${activeTab === 'rules'
               ? 'border-indigo-500 text-indigo-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <Code2 className="w-4 h-4" />
           WAF Rules & Versioning ({rules.length})
@@ -527,11 +529,10 @@ export const VirtualPatchingPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('deployments')}
-          className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${
-            activeTab === 'deployments'
+          className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${activeTab === 'deployments'
               ? 'border-indigo-500 text-indigo-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <Layers className="w-4 h-4" />
           Deployments & Human Sign-Off ({deployments.length})
@@ -539,11 +540,10 @@ export const VirtualPatchingPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('logs')}
-          className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${
-            activeTab === 'logs'
+          className={`pb-3 text-sm font-medium transition border-b-2 flex items-center gap-2 ${activeTab === 'logs'
               ? 'border-indigo-500 text-indigo-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <History className="w-4 h-4" />
           Reverse Proxy Audit Logs ({logs.length})
@@ -766,11 +766,10 @@ export const VirtualPatchingPage: React.FC = () => {
                       <td className="p-3 text-right space-x-2">
                         <button
                           onClick={() => handleToggleRule(rule)}
-                          className={`px-2 py-1 rounded text-[11px] font-medium transition ${
-                            rule.is_active
+                          className={`px-2 py-1 rounded text-[11px] font-medium transition ${rule.is_active
                               ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
                               : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                          }`}
+                            }`}
                         >
                           {rule.is_active ? 'Disable' : 'Enable'}
                         </button>
@@ -951,11 +950,10 @@ export const VirtualPatchingPage: React.FC = () => {
                       </td>
                       <td className="p-3">
                         <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full border font-mono font-bold ${
-                            log.decision === 'BLOCKED'
+                          className={`text-[10px] px-2 py-0.5 rounded-full border font-mono font-bold ${log.decision === 'BLOCKED'
                               ? 'bg-red-500/10 text-red-400 border-red-500/20'
                               : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          }`}
+                            }`}
                         >
                           {log.decision} ({log.response_status_code})
                         </span>

@@ -74,13 +74,18 @@ export const ZeroTrustPage: React.FC = () => {
         zeroTrustApi.listResponseActions(),
       ]);
       setOverview(ovData);
-      setAssessments(assData);
-      setThreatIndicators(indData);
-      setCorrelations(corrData);
-      setAnomalies(anomData);
-      setResponseActions(actData);
+      setAssessments(Array.isArray(assData) ? assData : []);
+      setThreatIndicators(Array.isArray(indData) ? indData : []);
+      setCorrelations(Array.isArray(corrData) ? corrData : []);
+      setAnomalies(Array.isArray(anomData) ? anomData : []);
+      setResponseActions(Array.isArray(actData) ? actData : []);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Failed to load Zero Trust telemetry.');
+      setAssessments([]);
+      setThreatIndicators([]);
+      setCorrelations([]);
+      setAnomalies([]);
+      setResponseActions([]);
     } finally {
       setIsLoading(false);
     }
@@ -249,23 +254,23 @@ export const ZeroTrustPage: React.FC = () => {
     }
   };
 
-  const filteredAssessments = assessments.filter((a) => {
+  const filteredAssessments = (assessments || []).filter((a) => {
     if (decisionFilter === 'ALL') return true;
     return a.trust_decision === decisionFilter;
   });
 
-  const filteredThreats = threatIndicators.filter((t) => {
+  const filteredThreats = (threatIndicators || []).filter((t) => {
     if (threatTypeFilter === 'ALL') return true;
     return t.indicator_type === threatTypeFilter;
   });
 
-  const filteredAnomalies = anomalies.filter((an) => {
+  const filteredAnomalies = (anomalies || []).filter((an) => {
     if (anomalyFilter === 'ALL') return true;
     if (anomalyFilter === 'ZERO_DAY') return an.is_zero_day_indicator;
     return an.status === anomalyFilter;
   });
 
-  const filteredActions = responseActions.filter((ac) => {
+  const filteredActions = (responseActions || []).filter((ac) => {
     if (responseStatusFilter === 'ALL') return true;
     return ac.status === responseStatusFilter;
   });
@@ -424,11 +429,10 @@ export const ZeroTrustPage: React.FC = () => {
       <div className="flex items-center gap-2 mt-6 border-b border-slate-800 pb-2">
         <button
           onClick={() => setActiveTab('posture')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            activeTab === 'posture'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'posture'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
+            }`}
         >
           <Shield className="w-4 h-4" />
           Asset Trust Posture ({assessments.length})
@@ -436,11 +440,10 @@ export const ZeroTrustPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('threat_intel')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            activeTab === 'threat_intel'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'threat_intel'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
+            }`}
         >
           <Globe className="w-4 h-4" />
           Threat Intelligence & Correlations ({threatIndicators.length} IOCs / {correlations.length} Matched)
@@ -448,11 +451,10 @@ export const ZeroTrustPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('anomalies')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            activeTab === 'anomalies'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'anomalies'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
+            }`}
         >
           <AlertTriangle className="w-4 h-4" />
           Behavioral & Zero-Day Alerts ({anomalies.length})
@@ -460,11 +462,10 @@ export const ZeroTrustPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('responses')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            activeTab === 'responses'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'responses'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
+            }`}
         >
           <Lock className="w-4 h-4" />
           Automated Response Actions ({responseActions.length})
@@ -482,9 +483,8 @@ export const ZeroTrustPage: React.FC = () => {
                 <button
                   key={d}
                   onClick={() => setDecisionFilter(d)}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                    decisionFilter === d ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
-                  }`}
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition ${decisionFilter === d ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
+                    }`}
                 >
                   {d}
                 </button>
@@ -527,13 +527,12 @@ export const ZeroTrustPage: React.FC = () => {
                         <div className="flex items-center gap-2.5">
                           <div className="w-24 bg-slate-800 rounded-full h-2 overflow-hidden">
                             <div
-                              className={`h-2 rounded-full ${
-                                a.trust_score >= 70
+                              className={`h-2 rounded-full ${a.trust_score >= 70
                                   ? 'bg-emerald-500'
                                   : a.trust_score >= 30
-                                  ? 'bg-amber-500'
-                                  : 'bg-rose-500'
-                              }`}
+                                    ? 'bg-amber-500'
+                                    : 'bg-rose-500'
+                                }`}
                               style={{ width: `${Math.min(100, Math.max(5, a.trust_score))}%` }}
                             />
                           </div>
@@ -634,9 +633,8 @@ export const ZeroTrustPage: React.FC = () => {
                   <button
                     key={t}
                     onClick={() => setThreatTypeFilter(t)}
-                    className={`px-2 py-1 rounded text-xs transition ${
-                      threatTypeFilter === t ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400'
-                    }`}
+                    className={`px-2 py-1 rounded text-xs transition ${threatTypeFilter === t ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400'
+                      }`}
                   >
                     {t}
                   </button>
@@ -702,9 +700,8 @@ export const ZeroTrustPage: React.FC = () => {
                 <button
                   key={f}
                   onClick={() => setAnomalyFilter(f)}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                    anomalyFilter === f ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
-                  }`}
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition ${anomalyFilter === f ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
+                    }`}
                 >
                   {f}
                 </button>
@@ -722,11 +719,10 @@ export const ZeroTrustPage: React.FC = () => {
               filteredAnomalies.map((an) => (
                 <div
                   key={an.id}
-                  className={`p-4 rounded-xl border transition ${
-                    an.is_zero_day_indicator
+                  className={`p-4 rounded-xl border transition ${an.is_zero_day_indicator
                       ? 'border-purple-600/50 bg-purple-950/20'
                       : 'border-slate-800 bg-slate-900/60'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -811,11 +807,10 @@ export const ZeroTrustPage: React.FC = () => {
                 <button
                   key={st}
                   onClick={() => setResponseStatusFilter(st)}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                    responseStatusFilter === st
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition ${responseStatusFilter === st
                       ? 'bg-indigo-600 text-white'
                       : 'bg-slate-900 text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   {st}
                 </button>
@@ -865,17 +860,16 @@ export const ZeroTrustPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3.5">
                         <span
-                          className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                            ac.status === 'EXECUTED'
+                          className={`px-2 py-0.5 rounded text-xs font-semibold ${ac.status === 'EXECUTED'
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                               : ac.status === 'APPROVED'
-                              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                              : ac.status === 'PENDING_APPROVAL'
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                              : ac.status === 'ROLLED_BACK'
-                              ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                              : 'bg-rose-500/20 text-rose-400'
-                          }`}
+                                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                                : ac.status === 'PENDING_APPROVAL'
+                                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                  : ac.status === 'ROLLED_BACK'
+                                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                    : 'bg-rose-500/20 text-rose-400'
+                            }`}
                         >
                           {ac.status}
                         </span>

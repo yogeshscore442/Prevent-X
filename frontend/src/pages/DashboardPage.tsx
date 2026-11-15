@@ -25,9 +25,10 @@ export const DashboardPage: React.FC = () => {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const activeMembership = user?.memberships.find(
+  const memberships = user?.memberships || [];
+  const activeMembership = memberships.find(
     (m) => m.organization_id === activeOrgId
-  ) || user?.memberships[0];
+  ) || memberships[0];
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -177,27 +178,25 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {systemInfo?.modules.map((mod) => {
+          {(systemInfo?.modules || []).map((mod) => {
             const isOp = mod.status === 'OPERATIONAL';
             return (
               <div
                 key={mod.module_id}
-                className={`p-4 rounded-xl border transition-all ${
-                  isOp
+                className={`p-4 rounded-xl border transition-all ${isOp
                     ? 'bg-navy-850/80 border-cyan-500/30 hover:border-cyan-500/60'
                     : 'bg-navy-950/60 border-navy-800'
-                }`}
+                  }`}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <span className="text-xs font-mono font-bold text-cyan-300 bg-navy-800 px-2 py-0.5 rounded">
                     {mod.module_id}
                   </span>
                   <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-semibold ${
-                      isOp
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-semibold ${isOp
                         ? 'bg-emerald-950 text-emerald-300 border border-emerald-800/50'
                         : 'bg-amber-950/60 text-amber-300 border border-amber-800/50'
-                    }`}
+                      }`}
                   >
                     {isOp ? 'OPERATIONAL' : `Phase ${mod.phase} Planned`}
                   </span>
