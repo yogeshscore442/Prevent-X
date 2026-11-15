@@ -84,6 +84,33 @@ services:
       start_period: 15s
 
   # ============================================================================
+  # Background Worker Service: Celery
+  # ============================================================================
+  worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    container_name: preventx-celery-worker
+    command: celery -A backend.app.workers.celery_app.celery_app worker --loglevel=info
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - APP_NAME=PREVENT-X
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-preventx_user}:${POSTGRES_PASSWORD:-preventx_secure_pass}@postgres:5432/${POSTGRES_DB:-preventx_db}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-preventx-prod-secret-key-replace-in-production-32c!}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - preventx-internal-net
+
+  # ============================================================================
   # Frontend Application: React / Vite SPA
   # ============================================================================
   frontend:

@@ -144,3 +144,4 @@ def downgrade() -> None:
     op.drop_table('incident_timeline_entries')
     op.drop_table('security_events')
     op.drop_table('security_incidents')
+

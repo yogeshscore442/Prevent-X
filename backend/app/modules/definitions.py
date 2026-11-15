@@ -288,6 +288,51 @@ class ZeroDayUnknownThreatProtectionModule(BaseSecurityModule):
     def target_phase(self) -> int:
         return 6
 
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        from uuid import UUID
+        from backend.app.database.session import SessionLocal
+        from backend.app.modules.zero_trust.anomaly_engine import BehavioralAnomalyEngine
+
+        org_id_val = payload.get("organization_id")
+        if not org_id_val:
+            raise ValueError("organization_id is required.")
+        org_id = UUID(str(org_id_val))
+
+        db = SessionLocal()
+        try:
+            if action_name == "detect_anomalies":
+                anomalies = BehavioralAnomalyEngine.evaluate_all_anomalies(db, org_id)
+                return {
+                    "status": "SUCCESS",
+                    "anomalies_count": len(anomalies),
+                    "anomalies": [str(a.id) for a in anomalies],
+                }
+            elif action_name == "record_zero_day_indicator":
+                asset_id = UUID(str(payload["asset_id"])) if payload.get("asset_id") else None
+                anomaly = BehavioralAnomalyEngine.record_zero_day_payload_indicator(
+                    db=db,
+                    organization_id=org_id,
+                    asset_id=asset_id,
+                    request_uri=payload.get("request_uri", "/"),
+                    method=payload.get("method", "POST"),
+                    raw_payload=payload.get("raw_payload", ""),
+                    heuristic_reason=payload.get("heuristic_reason", "Heuristic unknown exploit signature pattern"),
+                )
+                return {
+                    "status": "SUCCESS",
+                    "anomaly_id": str(anomaly.id),
+                    "anomaly_type": anomaly.anomaly_type,
+                    "confidence": anomaly.confidence,
+                }
+            else:
+                raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+        finally:
+            db.close()
+
 
 class IntelligentVirtualPatchingModule(BaseSecurityModule):
     @property
@@ -509,6 +554,53 @@ class AutomatedResponseReliableRollbackModule(BaseSecurityModule):
     @property
     def target_phase(self) -> int:
         return 8
+
+    @property
+    def is_operational(self) -> bool:
+        return True
+
+    def execute_action(self, action_name: str, payload: dict) -> dict:
+        from uuid import UUID
+        from backend.app.database.session import SessionLocal
+        from backend.app.modules.security_validation.service import SecurityValidationService
+
+        org_id_val = payload.get("organization_id")
+        if not org_id_val:
+            raise ValueError("organization_id is required.")
+        org_id = UUID(str(org_id_val))
+
+        db = SessionLocal()
+        try:
+            if action_name == "execute_rollback":
+                dep_id = UUID(str(payload["deployment_id"]))
+                target_dep_id = UUID(str(payload["target_deployment_id"])) if payload.get("target_deployment_id") else None
+                reason = payload.get("rollback_reason", "Automated incident response rollback")
+                user_id = UUID(str(payload["user_id"])) if payload.get("user_id") else None
+                record = SecurityValidationService.execute_rollback(
+                    db,
+                    organization_id=org_id,
+                    deployment_id=dep_id,
+                    rollback_reason=reason,
+                    target_deployment_id=target_dep_id,
+                    user_id=user_id,
+                )
+                return {
+                    "status": "SUCCESS",
+                    "rollback_id": str(record.id),
+                    "rollback_status": record.status,
+                    "verified": record.is_restoration_verified,
+                }
+            elif action_name == "list_rollbacks":
+                records = SecurityValidationService.list_rollback_records(db, org_id)
+                return {
+                    "status": "SUCCESS",
+                    "count": len(records),
+                    "rollbacks": [str(r.id) for r in records],
+                }
+            else:
+                raise NotImplementedError(f"Action '{action_name}' is not supported by {self.module_id}.")
+        finally:
+            db.close()
 
 
 class CentralizedSMBSecurityPlatformModule(BaseSecurityModule):

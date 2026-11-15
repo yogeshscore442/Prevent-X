@@ -241,6 +241,11 @@ class NginxProxyManager:
             }
 
     @classmethod
+    def is_proxy_running(cls, listen_port: int = 8085) -> bool:
+        """Convenience method checking if Nginx reverse proxy is actively running on port."""
+        return cls.check_proxy_health(listen_port).get("is_running", False)
+
+    @classmethod
     def stop_proxy(cls) -> bool:
         """
         Gracefully terminates running Nginx processes.

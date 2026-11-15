@@ -134,3 +134,4 @@ export interface SecurityCenterOverviewStats {
   validation_failures_24h: number;
   unacknowledged_alerts_count: number;
 }
+

@@ -243,3 +243,4 @@ class SecurityCenterOverviewStats(BaseModel):
     recent_rollbacks_count: int
     validation_failures_24h: int
     unacknowledged_alerts_count: int
+

@@ -276,3 +276,4 @@ class EventRetentionPolicy(Base, TimestampMixin):
 
     # Relationships
     organization: Mapped["Organization"] = relationship("Organization")
+

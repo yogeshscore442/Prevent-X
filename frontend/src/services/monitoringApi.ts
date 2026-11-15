@@ -140,3 +140,4 @@ export const monitoringApi = {
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   },
 };
+

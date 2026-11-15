@@ -159,3 +159,4 @@ All telemetry streams into an automated correlation engine mapped to the **MITRE
 | `GET` | `/api/v1/monitoring/retention` | `retention:manage` | View tenant event retention settings |
 | `PUT` | `/api/v1/monitoring/retention` | `retention:manage` | Update tenant event retention window and storage limit |
 | `POST` | `/api/v1/monitoring/retention/prune` | `retention:manage` | Immediately prune expired security telemetry |
+

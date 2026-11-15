@@ -1236,7 +1236,7 @@ export const SecurityValidationPage: React.FC = () => {
               </div>
 
               <div className="rounded-lg bg-cyan-950/30 border border-cyan-800/40 p-3 text-xs text-cyan-300">
-                <strong>Non-Destructive Guarantee:</strong> Probes are read-only payload simulations. If false-positive or failure thresholds are breached, automatic rollback executes immediately.
+                <strong>Non-Destructive Protocol:</strong> Probes are constrained to read-only payload simulations. If false-positive or failure thresholds are breached, automatic rollback executes immediately.
               </div>
             </div>
 

@@ -85,3 +85,4 @@ def sanitize_payload(payload: Optional[Union[str, Dict[str, Any]]]) -> str:
         sanitized = sanitized[:MAX_RAW_PAYLOAD_BYTES] + "\n[TRUNCATED: Exceeded 64KB payload limit]"
 
     return sanitized
+
