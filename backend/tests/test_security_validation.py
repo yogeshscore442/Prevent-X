@@ -384,7 +384,7 @@ def test_failed_rollback_reported_accurately(db_session: Session, test_tenants):
         environment=DeploymentEnvironment.STAGING.value,
         status=DeploymentStatus.DEPLOYED.value,
         deployed_rules_count=0,
-        config_hash="corrupt_hash_0000000000000000000000000000000000000000000000000000",
+        config_hash="c" * 64,
         nginx_config_path="infrastructure/bin/nginx/conf/missing_corrupted_config.conf",
         listen_port=8085,
         upstream_url="http://127.0.0.1:8086",

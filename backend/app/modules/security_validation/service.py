@@ -354,6 +354,7 @@ class SecurityValidationService:
     ) -> RollbackRecord:
         """
         Triggers an audited atomic configuration rollback.
+        Records status (including ROLLBACK_FAILED if verification fails) in the database.
         """
         return RollbackOrchestrator.execute_atomic_rollback(
             db=db,

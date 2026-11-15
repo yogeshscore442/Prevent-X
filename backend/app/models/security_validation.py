@@ -208,7 +208,10 @@ class RollbackRecord(Base, TimestampMixin):
 
 class CanaryPolicy(Base, TimestampMixin):
     """
-    Configurable safety thresholds and canary routing rules for progressive virtual patch rollouts.
+    Configurable safety thresholds and validation rollout policy for virtual patches.
+    NOTE: Defines validation evaluation quotas, health failure thresholds, and automatic rollback gates.
+    Live reverse-proxy multi-upstream traffic splitting is a configuration policy capability rather than
+    network-level L7 traffic splitting in single-gateway deployments.
     """
     __tablename__ = "canary_policies"
 

@@ -1046,12 +1046,17 @@ export const SecurityValidationPage: React.FC = () => {
       {activeTab === 'canary' && (
         <div className="space-y-4">
           <div className="rounded-xl border border-slate-800 bg-[#0f172a]/60 p-4">
-            <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-              <Sliders className="h-4 w-4 text-purple-400" />
-              SMB Canary Safety Policy & Automated Rollback Thresholds
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <Sliders className="h-4 w-4 text-purple-400" />
+                SMB Canary Safety Policy & Automated Rollback Thresholds
+              </h3>
+              <span className="inline-flex items-center rounded-md bg-purple-950/60 px-2 py-0.5 text-[10px] font-semibold text-purple-300 ring-1 ring-inset ring-purple-700/50">
+                Policy & Evaluation Gate (Non-Routing)
+              </span>
+            </div>
             <p className="text-xs text-slate-400 mt-1">
-              Configure strict thresholds designed specifically for Indian SMB digital businesses to avoid false positives and service disruption.
+              Defines progressive validation thresholds and automated rollback safety gates for Indian SMB workloads. When validation test failures or latencies breach these policy limits, PREVENT-X triggers an immediate atomic rollback. (Note: Enforced via validation safety evaluation; live upstream network traffic splitting is reserved for multi-cluster reverse proxy architectures).
             </p>
           </div>
 
@@ -1059,7 +1064,7 @@ export const SecurityValidationPage: React.FC = () => {
             <div className="rounded-xl border border-slate-800 bg-[#0f172a]/70 p-5 space-y-4">
               <div>
                 <label className="text-xs font-semibold text-slate-200">
-                  Canary Traffic Allocation Weight (%)
+                  Canary Validation Allocation Weight (%) — Policy Gate
                 </label>
                 <div className="mt-2 flex items-center gap-4">
                   <input

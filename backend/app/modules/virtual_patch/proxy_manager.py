@@ -4,6 +4,7 @@ Controls the Nginx reverse proxy process lifecycle, configuration syntax validat
 safe hot-reloading, health checks, and automatic rollback on failure.
 """
 
+import hashlib
 import logging
 import os
 import subprocess
@@ -93,9 +94,41 @@ class NginxProxyManager:
                 pass
 
     @classmethod
+    def get_active_config_path(cls) -> str:
+        """
+        Returns the absolute path to the active Nginx configuration file.
+        """
+        _, prefix_path = cls.get_nginx_binary_and_prefix()
+        if not prefix_path:
+            prefix_path = os.path.join("infrastructure", "bin", "nginx")
+        conf_dir = Path(prefix_path) / "conf"
+        conf_dir.mkdir(parents=True, exist_ok=True)
+        return str((conf_dir / "preventx_active.conf").resolve()).replace("\\", "/")
+
+    @classmethod
+    def get_active_config_content(cls) -> Optional[str]:
+        """
+        Reads the current active configuration content from preventx_active.conf.
+        """
+        p = Path(cls.get_active_config_path())
+        if p.is_file():
+            return p.read_text(encoding="utf-8")
+        return None
+
+    @classmethod
+    def get_active_config_hash(cls) -> Optional[str]:
+        """
+        Computes SHA-256 checksum of current active Nginx configuration.
+        """
+        content = cls.get_active_config_content()
+        if content is not None:
+            return hashlib.sha256(content.encode("utf-8")).hexdigest()
+        return None
+
+    @classmethod
     def write_runtime_config(cls, deployment_id: str, config_content: str) -> str:
         """
-        Writes configuration to infrastructure/bin/nginx/conf/preventx_<deployment_id>.conf.
+        Writes configuration snapshot to infrastructure/bin/nginx/conf/preventx_<deployment_id>.conf.
         """
         _, prefix_path = cls.get_nginx_binary_and_prefix()
         if not prefix_path:
@@ -118,26 +151,35 @@ class NginxProxyManager:
     ) -> Tuple[bool, str]:
         """
         Validates and activates configuration on the Nginx reverse proxy.
-        If validation fails, rolls back immediately.
+        Maintains an immutable snapshot file (preventx_<id>.conf) and updates the live
+        active configuration (preventx_active.conf) followed by hot reload / daemon launch.
         """
+        # 1. Write and validate immutable deployment snapshot
         conf_path = cls.write_runtime_config(deployment_id, config_content)
-
-        # 1. Pre-deployment syntax verification
         is_valid, validation_log = cls.test_configuration(conf_path)
         if not is_valid:
             logger.error("Failed configuration syntax check for deployment %s: %s", deployment_id, validation_log)
             return False, validation_log
 
-        # 2. Hot-reload or start proxy
+        # 2. Update active runtime configuration
+        active_conf_path = cls.get_active_config_path()
+        Path(active_conf_path).write_text(config_content, encoding="utf-8")
+
+        is_valid_active, active_log = cls.test_configuration(active_conf_path)
+        if not is_valid_active:
+            logger.error("Failed active configuration syntax check: %s", active_log)
+            return False, f"Active configuration syntax check failed: {active_log}"
+
+        # 3. Hot-reload or start proxy
         bin_path, prefix_path = cls.get_nginx_binary_and_prefix()
         if not bin_path or not prefix_path:
             return False, "Nginx binary not available."
 
-        norm_conf = str(Path(conf_path).resolve()).replace("\\", "/")
+        norm_active = str(Path(active_conf_path).resolve()).replace("\\", "/")
         norm_prefix = str(Path(prefix_path).resolve()).replace("\\", "/")
 
-        # Try graceful reload first
-        reload_cmd = [bin_path, "-p", norm_prefix, "-s", "reload"]
+        # Try graceful reload first with active config
+        reload_cmd = [bin_path, "-p", norm_prefix, "-c", norm_active, "-s", "reload"]
         try:
             reload_res = subprocess.run(
                 reload_cmd,
@@ -153,8 +195,8 @@ class NginxProxyManager:
         except Exception:
             pass
 
-        # If reload failed or Nginx was not running, launch Nginx background daemon
-        start_cmd = [bin_path, "-p", norm_prefix, "-c", norm_conf]
+        # If reload failed or Nginx was not running, launch Nginx background daemon with active config
+        start_cmd = [bin_path, "-p", norm_prefix, "-c", norm_active]
         try:
             # Launch detached process on Windows
             DETACHED_PROCESS = 0x00000008

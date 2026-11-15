@@ -14,6 +14,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
+from backend.app.core.distributed_lock import (
+    distributed_deployment_lock,
+    get_deployment_scope,
+)
 from backend.app.database.base import utc_now
 from backend.app.models.asset import ManagedAsset
 from backend.app.models.organization import Organization
@@ -608,56 +612,64 @@ class VirtualPatchService:
         Enforces approved virtual patches onto the live Nginx reverse proxy.
         MANDATORY: Refuses execution unless the deployment was explicitly APPROVED by an OrgAdmin.
         """
-        dep = db.scalar(
-            select(VirtualPatchDeployment).where(
-                VirtualPatchDeployment.id == deployment_id,
-                VirtualPatchDeployment.organization_id == organization_id,
-            )
-        )
-        if not dep:
-            raise ValueError("Deployment record not found.")
-
-        # HUMAN-IN-THE-LOOP AUTHORIZATION ENFORCEMENT
-        if dep.status != DeploymentStatus.APPROVED.value:
-            raise ValueError(
-                f"Unauthorized production deployment attempt. Status is '{dep.status}'; "
-                "Production deployment strictly requires prior human approval (APPROVED status)."
-            )
-
-        if not dep.nginx_config_path or not Path(dep.nginx_config_path).is_file():
-            raise ValueError(f"Configuration file {dep.nginx_config_path} does not exist.")
-
-        config_content = Path(dep.nginx_config_path).read_text(encoding="utf-8")
-
-        # Activate on Nginx
-        success, log_msg = NginxProxyManager.apply_deployment(
-            deployment_id=str(dep.id),
-            config_content=config_content,
-            listen_port=dep.listen_port,
-            upstream_url=dep.upstream_url,
-        )
-
-        dep.deployment_log = (dep.deployment_log or "") + f"\nProduction Activation: {log_msg}"
-        if success:
-            dep.status = DeploymentStatus.DEPLOYED.value
-            dep.environment = DeploymentEnvironment.PRODUCTION.value
-            dep.deployed_at = utc_now()
-
-            # Mark associated rules as PRODUCTION
-            db.execute(
-                update(VirtualPatchRule)
-                .where(
-                    VirtualPatchRule.organization_id == organization_id,
-                    VirtualPatchRule.is_active == True,
+        scope = get_deployment_scope(organization_id)
+        with distributed_deployment_lock(
+            scope=scope,
+            organization_id=organization_id,
+            user_id=user_id,
+            timeout_seconds=10.0,
+            db=db,
+        ):
+            dep = db.scalar(
+                select(VirtualPatchDeployment).where(
+                    VirtualPatchDeployment.id == deployment_id,
+                    VirtualPatchDeployment.organization_id == organization_id,
                 )
-                .values(status=PatchStatus.PRODUCTION.value)
             )
-        else:
-            dep.status = DeploymentStatus.FAILED.value
+            if not dep:
+                raise ValueError("Deployment record not found.")
 
-        db.commit()
-        db.refresh(dep)
-        return dep
+            # HUMAN-IN-THE-LOOP AUTHORIZATION ENFORCEMENT
+            if dep.status != DeploymentStatus.APPROVED.value:
+                raise ValueError(
+                    f"Unauthorized production deployment attempt. Status is '{dep.status}'; "
+                    "Production deployment strictly requires prior human approval (APPROVED status)."
+                )
+
+            if not dep.nginx_config_path or not Path(dep.nginx_config_path).is_file():
+                raise ValueError(f"Configuration file {dep.nginx_config_path} does not exist.")
+
+            config_content = Path(dep.nginx_config_path).read_text(encoding="utf-8")
+
+            # Activate on Nginx
+            success, log_msg = NginxProxyManager.apply_deployment(
+                deployment_id=str(dep.id),
+                config_content=config_content,
+                listen_port=dep.listen_port,
+                upstream_url=dep.upstream_url,
+            )
+
+            dep.deployment_log = (dep.deployment_log or "") + f"\nProduction Activation: {log_msg}"
+            if success:
+                dep.status = DeploymentStatus.DEPLOYED.value
+                dep.environment = DeploymentEnvironment.PRODUCTION.value
+                dep.deployed_at = utc_now()
+
+                # Mark associated rules as PRODUCTION
+                db.execute(
+                    update(VirtualPatchRule)
+                    .where(
+                        VirtualPatchRule.organization_id == organization_id,
+                        VirtualPatchRule.is_active == True,
+                    )
+                    .values(status=PatchStatus.PRODUCTION.value)
+                )
+            else:
+                dep.status = DeploymentStatus.FAILED.value
+
+            db.commit()
+            db.refresh(dep)
+            return dep
 
     @classmethod
     def rollback_deployment(
@@ -670,46 +682,54 @@ class VirtualPatchService:
         """
         Rolls back the current deployment to the previous deployed version or terminates the proxy.
         """
-        dep = db.scalar(
-            select(VirtualPatchDeployment).where(
-                VirtualPatchDeployment.id == deployment_id,
-                VirtualPatchDeployment.organization_id == organization_id,
+        scope = get_deployment_scope(organization_id)
+        with distributed_deployment_lock(
+            scope=scope,
+            organization_id=organization_id,
+            user_id=user_id,
+            timeout_seconds=10.0,
+            db=db,
+        ):
+            dep = db.scalar(
+                select(VirtualPatchDeployment).where(
+                    VirtualPatchDeployment.id == deployment_id,
+                    VirtualPatchDeployment.organization_id == organization_id,
+                )
             )
-        )
-        if not dep:
-            raise ValueError("Deployment record not found.")
+            if not dep:
+                raise ValueError("Deployment record not found.")
 
-        # Locate previous stable deployment
-        prev_dep = db.scalar(
-            select(VirtualPatchDeployment)
-            .where(
-                VirtualPatchDeployment.organization_id == organization_id,
-                VirtualPatchDeployment.id != deployment_id,
-                VirtualPatchDeployment.status == DeploymentStatus.DEPLOYED.value,
+            # Locate previous stable deployment
+            prev_dep = db.scalar(
+                select(VirtualPatchDeployment)
+                .where(
+                    VirtualPatchDeployment.organization_id == organization_id,
+                    VirtualPatchDeployment.id != deployment_id,
+                    VirtualPatchDeployment.status == DeploymentStatus.DEPLOYED.value,
+                )
+                .order_by(VirtualPatchDeployment.deployed_at.desc())
+                .limit(1)
             )
-            .order_by(VirtualPatchDeployment.deployed_at.desc())
-            .limit(1)
-        )
 
-        if prev_dep and prev_dep.nginx_config_path and Path(prev_dep.nginx_config_path).is_file():
-            prev_content = Path(prev_dep.nginx_config_path).read_text(encoding="utf-8")
-            success, log_msg = NginxProxyManager.apply_deployment(
-                deployment_id=str(prev_dep.id),
-                config_content=prev_content,
-                listen_port=prev_dep.listen_port,
-                upstream_url=prev_dep.upstream_url,
-            )
-            dep.rollback_target_deployment_id = prev_dep.id
-            dep.deployment_log = (dep.deployment_log or "") + f"\nRolled back to deployment {prev_dep.id}: {log_msg}"
-        else:
-            # No prior configuration to revert to; stop the proxy gracefully
-            NginxProxyManager.stop_proxy()
-            dep.deployment_log = (dep.deployment_log or "") + "\nNo prior deployment available. Stopped reverse proxy."
+            if prev_dep and prev_dep.nginx_config_path and Path(prev_dep.nginx_config_path).is_file():
+                prev_content = Path(prev_dep.nginx_config_path).read_text(encoding="utf-8")
+                success, log_msg = NginxProxyManager.apply_deployment(
+                    deployment_id=str(prev_dep.id),
+                    config_content=prev_content,
+                    listen_port=prev_dep.listen_port,
+                    upstream_url=prev_dep.upstream_url,
+                )
+                dep.rollback_target_deployment_id = prev_dep.id
+                dep.deployment_log = (dep.deployment_log or "") + f"\nRolled back to deployment {prev_dep.id}: {log_msg}"
+            else:
+                # No prior configuration to revert to; stop the proxy gracefully
+                NginxProxyManager.stop_proxy()
+                dep.deployment_log = (dep.deployment_log or "") + "\nNo prior deployment available. Stopped reverse proxy."
 
-        dep.status = DeploymentStatus.ROLLED_BACK.value
-        db.commit()
-        db.refresh(dep)
-        return dep
+            dep.status = DeploymentStatus.ROLLED_BACK.value
+            db.commit()
+            db.refresh(dep)
+            return dep
 
     @classmethod
     def get_deployments(

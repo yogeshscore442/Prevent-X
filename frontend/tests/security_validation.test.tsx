@@ -278,7 +278,7 @@ describe('SecurityValidationPage Component (Phase 7)', () => {
     const canaryTab = screen.getByRole('button', { name: /Canary Safety Policies & Thresholds/i });
     fireEvent.click(canaryTab);
 
-    expect(await screen.findByText('Canary Traffic Allocation Weight (%)')).toBeInTheDocument();
+    expect(await screen.findByText(/Canary.*Allocation Weight/i)).toBeInTheDocument();
 
     const saveBtn = screen.getByRole('button', { name: /Save Policy Configuration/i });
     fireEvent.click(saveBtn);

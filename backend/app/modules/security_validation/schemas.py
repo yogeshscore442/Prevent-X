@@ -99,8 +99,14 @@ class RollbackRecordRead(BaseModel):
 
 
 class CanaryPolicyCreate(BaseModel):
+    """Canary safety policy creation. Governs validation safety thresholds and auto-rollback gates."""
     name: str = "Default SMB Canary Safety Policy"
-    canary_traffic_weight: int = Field(default=10, ge=0, le=100)
+    canary_traffic_weight: int = Field(
+        default=10,
+        ge=0,
+        le=100,
+        description="Staged validation evaluation weight percentage (Policy/Configuration capability)",
+    )
     max_failure_rate_percent: float = Field(default=5.0, ge=0.0, le=100.0)
     max_latency_ms: float = Field(default=1000.0, ge=10.0)
     max_false_positive_count: int = Field(default=1, ge=0)
@@ -109,8 +115,14 @@ class CanaryPolicyCreate(BaseModel):
 
 
 class CanaryPolicyUpdate(BaseModel):
+    """Canary safety policy update schema."""
     name: Optional[str] = None
-    canary_traffic_weight: Optional[int] = Field(default=None, ge=0, le=100)
+    canary_traffic_weight: Optional[int] = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Staged validation evaluation weight percentage (Policy/Configuration capability)",
+    )
     max_failure_rate_percent: Optional[float] = Field(default=None, ge=0.0, le=100.0)
     max_latency_ms: Optional[float] = None
     max_false_positive_count: Optional[int] = None
@@ -120,10 +132,14 @@ class CanaryPolicyUpdate(BaseModel):
 
 
 class CanaryPolicyRead(BaseModel):
+    """Canary safety policy response representation."""
     id: uuid.UUID
     organization_id: uuid.UUID
     name: str
-    canary_traffic_weight: int
+    canary_traffic_weight: int = Field(
+        ...,
+        description="Staged validation evaluation weight percentage (Policy/Configuration capability)",
+    )
     max_failure_rate_percent: float
     max_latency_ms: float
     max_false_positive_count: int
